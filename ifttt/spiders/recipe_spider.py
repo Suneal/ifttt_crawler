@@ -54,7 +54,6 @@ class ChannelSpider(CrawlSpider):
     name = 'channel'
     allowed_domains = ["ifttt.com"]
     start_urls = [ "https://ifttt.com/channels/",
-                   #"https://ifttt.com/google_calendar", 
                   ]
     
     rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/[\_\w]+$"), 
@@ -64,18 +63,10 @@ class ChannelSpider(CrawlSpider):
 
     def parse_channel(self, response):
         loader = ChannelLoader(item=ChannelItem(), response=response)
-#         hxs = HtmlXPathSelector(response)
-#         description = hxs.select('//article/div/div[2]/div[2]/div[1]/a/text()')
-#         description.append(hxs.select('//article/div/div[2]/div[2]/div[1]/text()'))
         loader.add_value('id', response.url)
         loader.add_xpath('title', '//h1[@class="l-page-title"]/text()')
-        #loader.add_xpath('description', '//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_description ")]/text()')
-        #loader.add_xpath('description', '//article/div/div[2]/div[2]/div[1]/a/text()')
-        #loader.add_xpath('description', '//article/div/div[2]/div[2]/div[1]/text()')
         loader.add_xpath('description', '//article/div/div[2]/div[2]/div[1]')
         loader.add_xpath('commercial_url', '//article/div/div[2]/div[2]/div[1]/a/@href')
-        #events_generated
-        #actions_provided
         return loader.load_item()
 
 # class SimpleRecipeSpider(CrawlSpider):
