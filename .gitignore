@@ -1,0 +1,6 @@
+*.pyc
+.env
+.settings
+.project
+.pydevproject
+scraped_data
