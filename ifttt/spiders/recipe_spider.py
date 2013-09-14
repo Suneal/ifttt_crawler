@@ -3,13 +3,16 @@ Created on Sep 10, 2013
 
 @author: miguel
 '''
-from ifttt.items import RecipeItem, ChannelItem
-from ifttt.loaders import RecipeLoader, ChannelLoader
+from ifttt.items import RecipeItem, ChannelItem, EventItem, InputParameterItem
+from ifttt.loaders import RecipeLoader, ChannelLoader, EventLoader
+from scrapy import log
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from scrapy.contrib.spiders import CrawlSpider, Rule
+from scrapy.http.request import Request
 from scrapy.selector.lxmlsel import HtmlXPathSelector
 from scrapy.spider import BaseSpider
 import re
+import urlparse
 
 def get_id (url):
     """ helper that extracts the id from the url """ 
@@ -56,10 +59,13 @@ class ChannelSpider(CrawlSpider):
     start_urls = [ "https://ifttt.com/channels/",
                   ]
     
-    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/[\_\w]+$"), 
+    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/bitly$"), #allow=("https://ifttt.com/[\_\w]+$"), 
                                      deny=("terms$", "login$", "privacy$", "jobs$", "contact$", "join$", "channels$", "wtf$")),
                     callback="parse_channel" ),
              )
+
+    xpath_to_events  = '//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_triggers ")]/div/a/@href'
+    xpath_to_actions = '//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_actions ")]/div/a/@href'
 
     def parse_channel(self, response):
         loader = ChannelLoader(item=ChannelItem(), response=response)
@@ -67,7 +73,53 @@ class ChannelSpider(CrawlSpider):
         loader.add_xpath('title', '//h1[@class="l-page-title"]/text()')
         loader.add_xpath('description', '//article/div/div[2]/div[2]/div[1]')
         loader.add_xpath('commercial_url', '//article/div/div[2]/div[2]/div[1]/a/@href')
-        return loader.load_item()
+        loader.add_xpath('events_generated', self.xpath_to_events)
+        loader.add_xpath('actions_provided', self.xpath_to_actions)
+        yield loader.load_item()
+        
+        hxs = HtmlXPathSelector(response)
+        for url in hxs.select(self.xpath_to_events).extract():
+            url = urlparse.urljoin(response.url, url)
+            yield Request(url, callback=self.parse_event)
+            
+        for url in hxs.select(self.xpath_to_actions).extract():
+            url = urlparse.urljoin(response.url, url)
+            yield Request(url, callback=self.parse_action)
+        
+    
+    def parse_event(self, response):
+        log.msg("Parse event...", level=log.DEBUG)
+        loader = EventLoader(item=EventItem(), response=response)
+        loader.add_value('id', response.url)
+        loader.add_xpath('title', '//div[@class="show-trigger-action-show"]/div/div[@class="ta_title"]/text()')
+        loader.add_xpath('description', '//div[@class="description"]/text()')
+        loader.add_xpath('input_parameters', '//label[@class="trigger-field_label"]/text()')
+        loader.add_xpath('output_parameters', '//table[@class="show-trigger-action_ingredients_table"]/descendant::tr/td[1]')
+        
+        log.msg("Antes del load")
+        loader.add_value('extra', InputParameterItem(id="1", title="title prueba", description="description prueba"))
+        log.msg("Despues del load")
+
+        yield loader.load_item()
+    
+    def parse_action(self, response):
+        log.msg("Parse action not implemented yet...", level=log.ERROR)
+        return None
+
+class EventSpider(CrawlSpider):
+
+    name = 'events'
+    allowed_domains = ["ifttt.com"]
+    start_urls = [ "https://ifttt.com/linkedin",
+                  ]
+    
+    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/[\_\w]+/triggers/\d+$")), 
+                    callback="parse_event" ),
+             )
+
+    def parse_event(self, response):
+        pass
+    
 
 # class SimpleRecipeSpider(CrawlSpider):
 #     base_url =  "https://ifttt.com"

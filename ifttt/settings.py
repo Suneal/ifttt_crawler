@@ -13,3 +13,8 @@ NEWSPIDER_MODULE = 'ifttt.spiders'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'ifttt (+http://www.yourdomain.com)'
+
+ITEM_PIPELINES = [
+    #'ifttt.pipelines.LogPipeline',
+    'ifttt.pipelines.FileExporterPipeline',
+    ]
