@@ -3,20 +3,22 @@ Created on Sep 10, 2013
 
 @author: miguel
 '''
-from ifttt.items import RecipeItem, ChannelItem, EventItem, InputParameterItem
-from ifttt.loaders import RecipeLoader, ChannelLoader, EventLoader
+from ifttt.items import RecipeItem, ChannelItem, EventItem, InputParameterItem, \
+    OutputParameterItem, ActionItem
+from ifttt.loaders import RecipeLoader, ChannelLoader, EventLoader, \
+    InputParameterLoader, OutputParameterLoader
+    
 from scrapy import log
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from scrapy.contrib.spiders import CrawlSpider, Rule
 from scrapy.http.request import Request
 from scrapy.selector.lxmlsel import HtmlXPathSelector
-from scrapy.spider import BaseSpider
+
 import re
 import urlparse
 
 def get_id (url):
     """ helper that extracts the id from the url """ 
-    
     pattern = re.compile('\d+$')
     return pattern.findall(url)
     
@@ -36,6 +38,14 @@ class RecipeSpider(CrawlSpider):
     )
     
     def parse_recipe(self, response):
+        """ This function parses a recipe page. 
+            Some contracts are mingled with this docstring.
+        
+            @url https://ifttt.com/recipes/117260
+            @returns items 1
+            @returns requests 0
+            @scrapes url id title description event_channel event action_channel action created_by created_at times_used
+        """
         loader = RecipeLoader(item=RecipeItem(), response=response)
         loader.add_value('url', response.url)
         loader.add_value('id', get_id(response.url))
@@ -68,6 +78,14 @@ class ChannelSpider(CrawlSpider):
     xpath_to_actions = '//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_actions ")]/div/a/@href'
 
     def parse_channel(self, response):
+        """ This function parses a channel page. 
+            Some contracts are mingled with this docstring.
+        
+            @url https://ifttt.com/bitly
+            @returns items 1
+            @returns requests 0
+            @scrapes id title description commercial_url events_generated actions_provided
+        """
         loader = ChannelLoader(item=ChannelItem(), response=response)
         loader.add_value('id', response.url)
         loader.add_xpath('title', '//h1[@class="l-page-title"]/text()')
@@ -88,94 +106,73 @@ class ChannelSpider(CrawlSpider):
         
     
     def parse_event(self, response):
+        """ This function parses a event page. 
+            Some contracts are mingled with this docstring.
+        
+            @url https://ifttt.com/channels/gmail/triggers/86
+            @returns items 1
+            @returns requests 0
+            @scrapes id title description
+        """
         log.msg("Parse event...", level=log.DEBUG)
         loader = EventLoader(item=EventItem(), response=response)
         loader.add_value('id', response.url)
         loader.add_xpath('title', '//div[@class="show-trigger-action-show"]/div/div[@class="ta_title"]/text()')
         loader.add_xpath('description', '//div[@class="description"]/text()')
-        loader.add_xpath('input_parameters', '//label[@class="trigger-field_label"]/text()')
-        loader.add_xpath('output_parameters', '//table[@class="show-trigger-action_ingredients_table"]/descendant::tr/td[1]')
         
-        log.msg("Antes del load")
-        loader.add_value('extra', InputParameterItem(id="1", title="title prueba", description="description prueba"))
-        log.msg("Despues del load")
+        hxs = HtmlXPathSelector(response)
+        for selector in hxs.select('//div[@class="trigger-field"]'):
+            loader.add_value('input_parameters', self._parse_event_iparam(selector))
+        
+        for selector in hxs.select('//table[@class="show-trigger-action_ingredients_table"]/descendant::tr'):
+            loader.add_value('output_parameters', self._parse_event_oparam(selector))
 
-        yield loader.load_item()
+        return loader.load_item()
     
     def parse_action(self, response):
-        log.msg("Parse action not implemented yet...", level=log.ERROR)
-        return None
+        """ This function parses a action page. 
+            Some contracts are mingled with this docstring.
+        
+            @url https://ifttt.com/channels/gmail/actions/34
+            @returns items 1
+            @returns requests 0
+            @scrapes id title description input_parameters
+        """        
+        log.msg("Parse event...", level=log.DEBUG)
+        loader = EventLoader(item=ActionItem(), response=response)
+        loader.add_value('id', response.url)
+        loader.add_xpath('title', '//div[@class="show-trigger-action-show"]/div/div[@class="ta_title"]/text()')
+        loader.add_xpath('description', '//div[@class="description"]/text()')
 
-class EventSpider(CrawlSpider):
-
-    name = 'events'
-    allowed_domains = ["ifttt.com"]
-    start_urls = [ "https://ifttt.com/linkedin",
-                  ]
+        hxs = HtmlXPathSelector(response)
+        for selector in hxs.select('//div[contains(concat(" ",normalize-space(@class)," ")," action-field ")]'):
+            loader.add_value('input_parameters', self._parse_action_iparam(selector))
+            
+        return loader.load_item()
     
-    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/[\_\w]+/triggers/\d+$")), 
-                    callback="parse_event" ),
-             )
-
-    def parse_event(self, response):
-        pass
+    def _parse_event_iparam(self, selector):
+        """  
+        """
+        loader = InputParameterLoader(item=InputParameterItem(), selector=selector)
+        loader.add_xpath('title', 'label[@class="trigger-field_label"]/text()')
+        loader.add_xpath('type', 'label[@class="trigger-field_label"]/@for')
+        loader.add_xpath('description', 'descendant::div[@class="action_field_helper_text"]/text()')
+        return loader.load_item()
     
+    def _parse_event_oparam(self, selector):
+        """ It assumes the selector given is a table row, so the xpath used 
+            to extract the data rely on that. 
+        """
+        loader = OutputParameterLoader(item=OutputParameterItem(), selector=selector)
+        loader.add_xpath('title', 'td[2]/div/text()')
+        loader.add_xpath('description', 'td[4]/text()')
+        loader.add_xpath('example', 'td[3]/text()')
+        return loader.load_item()
 
-# class SimpleRecipeSpider(CrawlSpider):
-#     base_url =  "https://ifttt.com"
-#     recipes_url = "https://ifttt.com/recipes" 
-# 
-#     name = 'recipe'
-#     allowed_domains = ["ifttt.com"]
-#     start_urls = [ recipes_url, ]
-#     
-#     def parse(self, response):
-#         log.msg("Start parsing...", level=log.INFO)
-#         
-#         hxs = HtmlXPathSelector(response)
-#         recipes = hxs.select('//article/div[2]/div')
-#         items = []
-#         for recipe in recipes:
-#             item = RecipeItem()
-#             #item['id']
-#             item['title'] = recipe.select('div/div/a/text()').extract()[0]
-#             item['url'] = self.base_url + recipe.select('div/div/a/@href').extract()[0]
-#             #item['event']
-#             #item['action']
-#             item['created_by'] = recipe.select('div/div/div/a/text()').extract()[0]
-#             item['created_at'] = recipe.select('div[2]/div/div[1]/text()[3]').re('(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d+,\s\d{4}')
-#             item['times_used'] = recipe.select('div[2]/div/div[2]/text()').re("(\d+)")[0]
-#             items.append(item)
-#         return items
-# 
-#     
-# class RecipePaginateSpider(CrawlSpider):
-#     base_url =  "https://ifttt.com"
-#     recipes_url = "https://ifttt.com/recipes" 
-# 
-#     name = 'recipe_pages'
-#     allowed_domains = ["ifttt.com"]
-#     start_urls = [ recipes_url, ]
-#     
-#     rules = (Rule (SgmlLinkExtractor(allow=("recipes\?page=\d+", ),
-#                                      restrict_xpaths=('//a[@class="next_page"]',)),
-#                    callback="parse_page", 
-#                    follow= True),
-#     )
-#     
-#     def parse_page(self, response):
-#         hxs = HtmlXPathSelector(response)
-#         recipes = hxs.select('//article/div[2]/div')
-#         items = []
-#         for recipe in recipes:
-#             item = RecipeItem()
-#             #item['id']
-#             item['title'] = recipe.select('div/div/a/text()').extract()[0]
-#             item['url'] = self.base_url + recipe.select('div/div/a/@href').extract()[0]
-#             #item['event']
-#             #item['action']
-#             item['created_by'] = recipe.select('div/div/div/a/text()').extract()[0]
-#             item['created_at'] = recipe.select('div[2]/div/div[1]/text()[3]').re('(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d+,\s\d{4}')
-#             item['times_used'] = recipe.select('div[2]/div/div[2]/text()').re("(\d+)")[0]
-#             items.append(item)
-#         return items
+    def _parse_action_iparam(self, selector):
+        """  
+        """
+        loader = InputParameterLoader(item=InputParameterItem(), selector=selector)
+        loader.add_xpath('title', 'label/text()')
+        loader.add_xpath('description', 'descendant::div[@class="action_field_helper_text"]/text()')
+        return loader.load_item()

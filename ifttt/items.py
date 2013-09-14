@@ -22,8 +22,6 @@ class RecipeItem(Item):
     times_used = Field()
     created_at = Field()
     
-    def __str__(self, *args, **kwargs):
-        return str(id)
 
 class ChannelItem(Item):
     """ Class that represents a Channel according to Ifttt definition.
@@ -48,27 +46,21 @@ class EventItem(Item):
     output_parameters = Field()
     extra = Field()
     
-    def __str__(self, *args, **kwargs):
-        return str(id)
 
 class ActionItem(Item):
     id = Field()
-    
-    def __str__(self, *args, **kwargs):
-        return "Action"
+    title = Field()
+    description = Field()
+    input_parameters = Field()
     
 class InputParameterItem(Item):
-    id = Field()  # Not a number but a unique string
     title = Field()
-    description = Field() # Notes + data example
+    description = Field()
+    type = Field()
     
-    def __str__(self, *args, **kwargs):
-        return str(id)
     
 class OutputParameterItem(Item):
-    id = Field()  # Not a number but a unique string
     title = Field()
-    description = Field() # Notes + data example
+    description = Field() # Name + Notes
+    example = Field()
 
-    def __str__(self, *args, **kwargs):
-        return str(id)

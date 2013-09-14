@@ -19,7 +19,7 @@ def strip(s):
         strip to remove all remaining html tags."""
     
     if isinstance(s, str):
-        log.msg("[loaders] Call strip with string:" + s,level=log.DEBUG)
+        log.msg("[loaders] Call strip with string",level=log.DEBUG)
         return s.strip().replace('\n','')
 
     if isinstance(s, unicode):
@@ -31,15 +31,11 @@ def strip(s):
 
 def erase_channel(s):
     """ This function removes the word 'Channel' at the end of the string."""
-    
-    log.msg("[loaders] Call erase_channel with:" + str(s), level=log.DEBUG)
     return re.sub('\s+Channel$', '', s)  
 
 
 def make_absolute(url):
     """ This appends the base url at the begining of the url string. """
-    
-    log.msg("[loaders] Make absolute url of:" + url, level=log.DEBUG)
     return urlparse.urljoin("https://ifttt.com", url)
 
     
@@ -95,3 +91,14 @@ class EventLoader(XPathItemLoader):
     input_parameters_out = Identity()
     output_parameters_out = Identity()
     
+class InputParameterLoader(XPathItemLoader):
+    """
+    """
+    default_input_processor = MapCompose(log_in, strip)
+    default_output_processor = TakeFirst()
+    
+class OutputParameterLoader(XPathItemLoader):
+    """
+    """
+    default_input_processor = MapCompose(log_in, strip)
+    default_output_processor = TakeFirst()
