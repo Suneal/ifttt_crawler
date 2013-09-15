@@ -13,10 +13,10 @@ import re
 import urlparse
 
 def strip(s):
-    """ This removes all whitespaces at the beggining or end of the given 
+    ''' This removes all whitespaces at the beggining or end of the given 
         string. Every textual input is modified using this function. If the
         argument is unicode, it performs some html2text operations before 
-        strip to remove all remaining html tags."""
+        strip to remove all remaining html tags.'''
     
     if isinstance(s, str):
         log.msg("[loaders] Call strip with string",level=log.DEBUG)
@@ -30,20 +30,20 @@ def strip(s):
     return s # If not str or unicode, do nothing
 
 def erase_channel(s):
-    """ This function removes the word 'Channel' at the end of the string."""
+    ''' This function removes the word 'Channel' at the end of the string.'''
     return re.sub('\s+Channel$', '', s)  
 
 
-def make_absolute(url):
-    """ This appends the base url at the begining of the url string. """
+def contextualize(url):
+    ''' This appends the base url at the begining of the url string. '''
     return urlparse.urljoin("https://ifttt.com", url)
 
     
 def channel_validator(channel_name):
-    """ This validates each the channel name matches any of the names of 
+    ''' This validates each the channel name matches any of the names of 
         channels defined. It corrects deviations in channel names, and 
         guaranties there is a single channel name for each channel defined.
-    """        
+    '''        
     return channel_name
 
 
@@ -53,13 +53,13 @@ def log_in(field):
     
     
 class RecipeLoader(XPathItemLoader):
-    """ Loader specifically created for handling RecipeItems. 
+    ''' Loader specifically created for handling RecipeItems. 
         By default, it strips all inputs and takes the first element 
         of the list as output.        
         It also performs additional processing
         to assure the channels' names matches any of the defined channels' 
         names. 
-    """        
+    '''        
     default_input_processor = MapCompose(log_in, strip)
     default_output_processor = TakeFirst()
     
@@ -68,23 +68,24 @@ class RecipeLoader(XPathItemLoader):
     
     
 class ChannelLoader(XPathItemLoader):
-    """ 
-    """
+    ''' 
+    '''
     
     default_input_processor = MapCompose(log_in, strip)
     default_output_processor = TakeFirst()
     
     title_in = MapCompose(log_in, strip, erase_channel, log_in) # first function applied first
     description_out = Join()
+    logo_in = MapCompose(contextualize)
     
-    events_generated_in = MapCompose(log_in, strip, make_absolute)
+    events_generated_in = MapCompose(log_in, strip, contextualize)
     events_generated_out = Identity()
-    actions_provided_in = MapCompose(log_in, strip, make_absolute)
+    actions_provided_in = MapCompose(log_in, strip, contextualize)
     actions_provided_out = Identity()
     
 class EventLoader(XPathItemLoader):
-    """
-    """
+    '''
+    '''
     default_input_processor = MapCompose(log_in, strip)
     default_output_processor = TakeFirst()
     
@@ -92,13 +93,13 @@ class EventLoader(XPathItemLoader):
     output_parameters_out = Identity()
     
 class InputParameterLoader(XPathItemLoader):
-    """
-    """
+    '''
+    '''
     default_input_processor = MapCompose(log_in, strip)
     default_output_processor = TakeFirst()
     
 class OutputParameterLoader(XPathItemLoader):
-    """
-    """
+    '''
+    '''
     default_input_processor = MapCompose(log_in, strip)
     default_output_processor = TakeFirst()

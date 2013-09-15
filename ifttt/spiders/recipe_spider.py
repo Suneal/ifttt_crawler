@@ -18,14 +18,14 @@ import re
 import urlparse
 
 def get_id (url):
-    """ helper that extracts the id from the url """ 
+    ''' helper that extracts the id from the url ''' 
     pattern = re.compile('\d+$')
     return pattern.findall(url)
     
     
     
 class RecipeSpider(CrawlSpider):
-    """ Spider that crawls by the urls that define recipes and parse them """
+    ''' Spider that crawls by the urls that define recipes and parse them '''
     
     name = 'recipe_page'
     allowed_domains = ["ifttt.com"]
@@ -38,14 +38,14 @@ class RecipeSpider(CrawlSpider):
     )
     
     def parse_recipe(self, response):
-        """ This function parses a recipe page. 
+        ''' This function parses a recipe page. 
             Some contracts are mingled with this docstring.
         
             @url https://ifttt.com/recipes/117260
             @returns items 1
             @returns requests 0
             @scrapes url id title description event_channel event action_channel action created_by created_at times_used
-        """
+        '''
         loader = RecipeLoader(item=RecipeItem(), response=response)
         loader.add_value('url', response.url)
         loader.add_value('id', get_id(response.url))
@@ -62,7 +62,7 @@ class RecipeSpider(CrawlSpider):
 
 
 class ChannelSpider(CrawlSpider):
-    """ """
+    ''' '''
     
     name = 'channel'
     allowed_domains = ["ifttt.com"]
@@ -77,19 +77,22 @@ class ChannelSpider(CrawlSpider):
     xpath_to_events  = '//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_triggers ")]/div/a/@href'
     xpath_to_actions = '//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_actions ")]/div/a/@href'
 
+
+
     def parse_channel(self, response):
-        """ This function parses a channel page. 
+        ''' This function parses a channel page. 
             Some contracts are mingled with this docstring.
         
             @url https://ifttt.com/bitly
             @returns items 1
             @returns requests 0
-            @scrapes id title description commercial_url events_generated actions_provided
-        """
+            @scrapes id title description commercial_url events_generated actions_provided logo
+        '''
         loader = ChannelLoader(item=ChannelItem(), response=response)
         loader.add_value('id', response.url)
         loader.add_xpath('title', '//h1[@class="l-page-title"]/text()')
         loader.add_xpath('description', '//article/div/div[2]/div[2]/div[1]')
+        loader.add_xpath('logo', '//img[contains(concat(" ",normalize-space(@class)," ")," channel-icon ")]/@src')
         loader.add_xpath('commercial_url', '//article/div/div[2]/div[2]/div[1]/a/@href')
         loader.add_xpath('events_generated', self.xpath_to_events)
         loader.add_xpath('actions_provided', self.xpath_to_actions)
@@ -104,16 +107,17 @@ class ChannelSpider(CrawlSpider):
             url = urlparse.urljoin(response.url, url)
             yield Request(url, callback=self.parse_action)
         
+ 
     
     def parse_event(self, response):
-        """ This function parses a event page. 
+        ''' This function parses a event page. 
             Some contracts are mingled with this docstring.
         
             @url https://ifttt.com/channels/gmail/triggers/86
             @returns items 1
             @returns requests 0
             @scrapes id title description
-        """
+        '''
         log.msg("Parse event...", level=log.DEBUG)
         loader = EventLoader(item=EventItem(), response=response)
         loader.add_value('id', response.url)
@@ -129,15 +133,17 @@ class ChannelSpider(CrawlSpider):
 
         return loader.load_item()
     
+  
+    
     def parse_action(self, response):
-        """ This function parses a action page. 
+        ''' This function parses a action page. 
             Some contracts are mingled with this docstring.
         
             @url https://ifttt.com/channels/gmail/actions/34
             @returns items 1
             @returns requests 0
             @scrapes id title description input_parameters
-        """        
+        '''        
         log.msg("Parse event...", level=log.DEBUG)
         loader = EventLoader(item=ActionItem(), response=response)
         loader.add_value('id', response.url)
@@ -150,28 +156,34 @@ class ChannelSpider(CrawlSpider):
             
         return loader.load_item()
     
+ 
+    
     def _parse_event_iparam(self, selector):
-        """  
-        """
+        '''  
+        '''
         loader = InputParameterLoader(item=InputParameterItem(), selector=selector)
         loader.add_xpath('title', 'label[@class="trigger-field_label"]/text()')
         loader.add_xpath('type', 'label[@class="trigger-field_label"]/@for')
         loader.add_xpath('description', 'descendant::div[@class="action_field_helper_text"]/text()')
         return loader.load_item()
     
+ 
+    
     def _parse_event_oparam(self, selector):
-        """ It assumes the selector given is a table row, so the xpath used 
+        ''' It assumes the selector given is a table row, so the xpath used 
             to extract the data rely on that. 
-        """
+        '''
         loader = OutputParameterLoader(item=OutputParameterItem(), selector=selector)
         loader.add_xpath('title', 'td[2]/div/text()')
         loader.add_xpath('description', 'td[4]/text()')
         loader.add_xpath('example', 'td[3]/text()')
         return loader.load_item()
 
+
+
     def _parse_action_iparam(self, selector):
-        """  
-        """
+        '''  
+        '''
         loader = InputParameterLoader(item=InputParameterItem(), selector=selector)
         loader.add_xpath('title', 'label/text()')
         loader.add_xpath('description', 'descendant::div[@class="action_field_helper_text"]/text()')
