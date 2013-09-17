@@ -2,7 +2,7 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
-from ifttt.items import ChannelItem, ActionItem, EventItem
+from ifttt.items import ChannelItem, ActionItem, EventItem, RecipeItem
 from scrapy import log
 from scrapy.item import Item
 
@@ -14,52 +14,46 @@ class IftttPipeline(object):
 class IdRegistryPipeline(object):
     ''' '''
     
-    event_ds = {}
-    action_ds = {}
+    REPLACE_FIELDS = ['action', 'action_channel', 'event', 'event_channel']
+    
+    id_ds = {}    
     
     def __init__(self, *args, **kwargs):
         # read from file
         pass
     
     def process_item(self, item, spider):
-        if isinstance(item, ChannelItem):
-            for event in item['events_generated']:
-                log.msg("Event:" + str(event), level = log.DEBUG)
-                pass
-            
-            for action in item['actions_provided']:
-                log.msg("Action:" + str(action), level = log.DEBUG)
-                pass
+        ''' '''
+
+        if isinstance(item, RecipeItem):
+            # Make substitutions
+            for field in self.REPLACE_FIELDS:
+                replacement = self.id_ds.get(item[field], None)
+                if replacement:
+                    log.msg("[IdRegistryPipeline] Field " + field + " replaced by:" + replacement, level=log.DEBUG)
+                    item[field] = replacement
                 
-            return item
         
-        if isinstance(item, EventItem):
-            if self.event_ds.get(item['title'], None):
-                log.msg("[IdRegistryPipeline] The Event <" + str(item['title']) + 
+        elif type(item) in [ChannelItem, EventItem, ActionItem]:
+            # Register new ids
+            if not item['title']:
+                log.msg("[IdRegistryPipeline] The item consideren has no title field:" + str(item), level=log.WARNING)
+            elif self.id_ds.get(item['title'], None):
+                log.msg("[IdRegistryPipeline] The Item <" + str(item['title']) + 
                         "> alreay exists on the data map. Current mapping is:" + 
-                        str(self.event_ds[item['title']]) + ". New proposal is " + str(item['id']), 
+                        str(self.id_ds[item['title']]) + ". New proposal is " + str(item['id']), 
                         log.WARNING)
             else:
-                log.msg("[IdRegistryPipeline] The event with name <" + str(item['title']) + 
+                log.msg("[IdRegistryPipeline] The Item with title <" + str(item['title']) + 
                         "> has been associated to the id:" + str(item['id']), 
                         level = log.DEBUG)
-                self.event_ds[item['title']] = item['id']
-                
-        elif isinstance(item, ActionItem):
-            if self.action_ds.get(item['title'], None):
-                log.msg("[IdRegistryPipeline] The Event <" + str(item['title']) + 
-                        "> alreay exists on the data map. Current mapping is:" + 
-                        str(self.action_ds[item['title']]) + ". New proposal is " + str(item['id']), 
-                        log.WARNING)
-            else:
-                log.msg("[IdRegistryPipeline] The event with name <" + str(item['title']) + 
-                        "> has been associated to the id:" + str(item['id']), 
-                        level = log.DEBUG)
-                self.action_ds[item['title']] = item['id']
+                self.id_ds[item['title']] = item['id']
         
         return item
     
+    
     def close_spider(self, spider):
+        # save to file
         if spider.name == 'channel':
             log.msg('Event Ids:')
             log.msg(str(self.event_ds))

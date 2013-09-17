@@ -1,5 +1,5 @@
 '''
-Created on Sep 10, 2013
+Created on Sep 17, 2013
 
 @author: miguel
 '''
@@ -17,26 +17,26 @@ from scrapy.selector.lxmlsel import HtmlXPathSelector
 import re
 import urlparse
 
-def get_id (url):
-    ''' helper that extracts the id from the url ''' 
-    pattern = re.compile('\d+$')
-    return pattern.findall(url)
+class IftttSpider(CrawlSpider):
+    ''' '''
     
-    
-    
-class RecipeSpider(CrawlSpider):
-    ''' Spider that crawls by the urls that define recipes and parse them '''
-    
-    name = 'recipe_page'
+    name = 'ifttt_spider'
     allowed_domains = ["ifttt.com"]
-    start_urls = [ "https://ifttt.com/recipes/", ]
-    
-    rules = (Rule (SgmlLinkExtractor(#allow=("recipes/\d+$", )),
-                                     allow=("recipes/117830", )),
-                   callback="parse_recipe", 
-                   follow=False),
-             #Rule (SgmlLinkExtractor(allow=("recipes",))),
+    start_urls = [ "https://ifttt.com/channels/",
+                   "https://ifttt.com/recipes/"]
+
+    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/feed$"), #allow=("https://ifttt.com/[\_\w]+$"), 
+                                     deny=("terms$", "login$", "privacy$", "jobs$", "contact$", "join$", "channels$", "wtf$")),
+                    callback="parse_channel" ),
+             
+             Rule( SgmlLinkExtractor(#allow=("recipes/\d+$", )),
+                               allow=("recipes/117872", "recipes/107031", "recipes/117247")),
+                    callback="parse_recipe", 
+                    follow=False),
     )
+    
+    xpath_to_events  = '//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_triggers ")]/div/a/@href'
+    xpath_to_actions = '//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_actions ")]/div/a/@href'
     
     def parse_recipe(self, response):
         ''' This function parses a recipe page. 
@@ -49,34 +49,17 @@ class RecipeSpider(CrawlSpider):
         '''
         loader = RecipeLoader(item=RecipeItem(), response=response)
         loader.add_value('url', response.url)
-        loader.add_value('id', get_id(response.url))
+        loader.add_value('id', response.url)
         loader.add_xpath('title','//h1/span[@itemprop="name"]/text()')
         loader.add_xpath('description','//span[@itemprop="description"]/text()')
         loader.add_xpath('event_channel', '//span[@class="recipe_trigger"]/@title')
         loader.add_xpath('event', '//span[@class="recipe_trigger"]/span/text()')
         loader.add_xpath('action_channel', '//span[@class="recipe_action"]/@title')
         loader.add_xpath('action', '//span[@class="recipe_action"]/span/text()')
-        loader.add_xpath('created_by', '//span[@itemprop="author"]/a/text()')
+        loader.add_xpath('created_by', '//span[@itemprop="author"]/a/@href')
         loader.add_xpath('created_at', '//span[@itemprop="datePublished"]/@datetime')
         loader.add_xpath('times_used','//div[3]/div[2]/div[1]/div[3]/text()', re="(\d+)")  
         return loader.load_item()
-
-
-class ChannelSpider(CrawlSpider):
-    ''' '''
-    
-    name = 'channel'
-    allowed_domains = ["ifttt.com"]
-    start_urls = [ "https://ifttt.com/channels/",
-                  ]
-    
-    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/bitly$"), #allow=("https://ifttt.com/[\_\w]+$"), 
-                                     deny=("terms$", "login$", "privacy$", "jobs$", "contact$", "join$", "channels$", "wtf$")),
-                    callback="parse_channel" ),
-             )
-
-    xpath_to_events  = '//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_triggers ")]/div/a/@href'
-    xpath_to_actions = '//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_actions ")]/div/a/@href'
 
 
 
@@ -95,20 +78,25 @@ class ChannelSpider(CrawlSpider):
         loader.add_xpath('description', '//article/div/div[2]/div[2]/div[1]')
         loader.add_xpath('logo', '//img[contains(concat(" ",normalize-space(@class)," ")," channel-icon ")]/@src')
         loader.add_xpath('commercial_url', '//article/div/div[2]/div[2]/div[1]/a/@href')
-        loader.add_xpath('events_generated', self.xpath_to_events)
-        loader.add_xpath('actions_provided', self.xpath_to_actions)
-        channel = loader.load_item() 
-        yield channel
+#         loader.add_xpath('events_generated', self.xpath_to_events)
+#         loader.add_xpath('actions_provided', self.xpath_to_actions)
+        loader.add_value('events_generated', EventItem(id='123', title='prueba', description='evento de prueba'))
+        loader.add_value('events_generated', EventItem(id='124', title='prueba 2', description='evento de prueba 2'))
+        loader.add_value('actions_provided', EventItem(id='12', title='prueba a', description='action de prueba'))
+        loader.add_value('actions_provided', EventItem(id='13', title='prueba a2', description='action de prueba 2')) 
         
-        hxs = HtmlXPathSelector(response)
-        for url in hxs.select(self.xpath_to_events).extract():
-            url = urlparse.urljoin(response.url, url)
-            yield Request(url, meta={'channel': channel} ,callback=self.parse_event)
-            
-        for url in hxs.select(self.xpath_to_actions).extract():
-            url = urlparse.urljoin(response.url, url)
-            yield Request(url, meta={'channel': channel}, callback=self.parse_action)
+    
+#         hxs = HtmlXPathSelector(response)
+#         for url in hxs.select(self.xpath_to_events).extract():
+#             url = urlparse.urljoin(response.url, url)
+#             yield Request(url, meta={'channel': loader} ,callback=self.parse_event)
+#             
+#         for url in hxs.select(self.xpath_to_actions).extract():
+#             url = urlparse.urljoin(response.url, url)
+#             yield Request(url, meta={'channel': loader}, callback=self.parse_action)
         
+ 
+        yield loader.load_item() 
  
     
     def parse_event(self, response):
@@ -135,10 +123,10 @@ class ChannelSpider(CrawlSpider):
 
         event = loader.load_item()
     
-        if response.meta and response.meta.hasattr('channel'):
-            channel = response.meta['channel']
-            log.msg("Meta" + str(channel))
-            channel['events_generated'] = event
+        if response.meta and response.meta.has_key('channel'):
+            channel_ldr = response.meta['channel']
+            log.msg("Meta ")
+            channel_ldr.add_value('events_generated', event)
         else:
             log.msg("No meta")
             
@@ -166,10 +154,10 @@ class ChannelSpider(CrawlSpider):
             
         action = loader.load_item()
         
-        if response.meta and response.meta.hasattr('channel'):
-            channel = response.meta['channel']
-            log.msg("Meta" + str(channel))
-            channel['actions_provided'] = action
+        if response.meta and response.meta.has_key('channel'):
+            channel_ldr = response.meta['channel']
+            log.msg("Meta ")
+            channel_ldr.add_value('actions_provided', action)
         else:
             log.msg("No meta")
         

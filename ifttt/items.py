@@ -36,6 +36,7 @@ class ChannelItem(Item):
         from ifttt's website. 
     '''
     ewe_class = 'ewe:Channel' 
+    template = 'channel'
     
     # Fields    
     id = Field() # Not a number a unique string

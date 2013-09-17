@@ -63,8 +63,7 @@ class RecipeLoader(XPathItemLoader):
     default_input_processor = MapCompose(log_in, strip)
     default_output_processor = TakeFirst()
     
-    action_channel_in = MapCompose(log_in, channel_validator)
-    event_channel_in = MapCompose(log_in, channel_validator)
+    created_by_in = MapCompose(log_in, contextualize)
     
     
 class ChannelLoader(XPathItemLoader):
@@ -78,9 +77,9 @@ class ChannelLoader(XPathItemLoader):
     description_out = Join()
     logo_in = MapCompose(contextualize)
     
-    events_generated_in = MapCompose(log_in, strip, contextualize)
+#     events_generated_in = MapCompose(log_in, strip, contextualize)
     events_generated_out = Identity()
-    actions_provided_in = MapCompose(log_in, strip, contextualize)
+#     actions_provided_in = MapCompose(log_in, strip, contextualize)
     actions_provided_out = Identity()
     
 class EventLoader(XPathItemLoader):
