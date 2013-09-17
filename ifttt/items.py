@@ -11,13 +11,14 @@ class RecipeItem(Item):
         All fields included can be populated using information scrapped
         from ifttt's website. 
     '''
-    ewe_class = 'Rule' 
+    ewe_class = 'Rule'
+    template = 'rule'
     
     # Fields    
     id = Field()
     title = Field()
     description = Field()
-    url = Field()
+    url = Field() # this should be id
     event = Field()
     event_channel = Field()
     action = Field()
@@ -26,6 +27,8 @@ class RecipeItem(Item):
     times_used = Field()
     created_at = Field()
     
+    def __str__(self, *args, **kwargs):
+        return "<Event " + str(self.get('title', '')) + ">"
 
 class ChannelItem(Item):
     ''' Class that represents a Channel according to Ifttt definition.
@@ -118,7 +121,7 @@ class InputParameterItem(Item):
     description_label = 'dcterms:description'
     description = Field()
     
-    type_label = 'dcterms:value'
+    type_label = 'xsd:type'
     type = Field()
     
     def __str__(self, *args, **kwargs):

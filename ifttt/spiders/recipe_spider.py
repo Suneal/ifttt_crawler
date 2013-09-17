@@ -31,7 +31,8 @@ class RecipeSpider(CrawlSpider):
     allowed_domains = ["ifttt.com"]
     start_urls = [ "https://ifttt.com/recipes/", ]
     
-    rules = (Rule (SgmlLinkExtractor(allow=("recipes/\d+$", )),
+    rules = (Rule (SgmlLinkExtractor(#allow=("recipes/\d+$", )),
+                                     allow=("recipes/117830", )),
                    callback="parse_recipe", 
                    follow=False),
              #Rule (SgmlLinkExtractor(allow=("recipes",))),

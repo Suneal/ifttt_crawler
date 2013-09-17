@@ -1,0 +1,85 @@
+<!DOCTYPE rdf:RDF system
+             "http://www.w3.org/XML/9710rdf-dtd/rdf.dtd">
+
+<rdf:RDF 
+	xmlns:foaf="http://xmlns.com/foaf/0.1/" 
+	xmlns:owl="http://www.w3.org/2002/07/owl#" 
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+	xmlns:ewe="http://gsi.dit.upm.es/ontologies/ewe/ns/" 
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema#" 
+	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
+	xmlns:dcterms="http://purl.org/dc/terms/" 
+	xmlns:tags="http://www.holygoat.co.uk/owl/redwood/0.1/tags/" 
+	xmlns="http://gsi.dit.upm.es/ontologies/ewe/ns/">
+	
+  <owl:Class rdf:about="{{ channel['id'] }}">
+    <rdfs:SubClassOf rdf:resource="http://gsi.dit.upm.es/ontologies/ewe/ns/Channel"/>
+    {% if channel['title'] %}
+    <dcterms:title>{{ channel['title'] }}</dcterms:title>
+    {% endif %}
+    {% if channel['description'] %}
+    <dcterms:description>{{ channel['description'] }}</dcterms:description>
+    {% endif %}    
+    {% if channel['commercial_url'] %}
+    <foaf:url>{{ channel['commercial_url'] }}</foaf:url>
+    {% endif %}    
+    {% if channel['logo'] %}
+    <foaf:logo>{{ channel['logo'] }}</foaf:logo>
+    {% endif %}
+    
+    {% for event in channel['events_generated'] %}
+    <ewe:generatesEvent>{{ event['id'] }}</ewe:generatesEvent>
+    {% endfor %}    
+    
+    {% for action in channel['actions_provided'] %}    
+    <ewe:hasAction>{{ action['id'] }}</ewe:hasAction>
+    {% endfor %}
+  </owl:Class>
+
+  {% for event in channel['events_generated'] %}
+  <owl:Class rdf:about="{{ event['id'] }}">
+    <rdfs:SubClassOf rdf:resource="http://gsi.dit.upm.es/ontologies/ewe/ns/Event"/>
+    {% if channel['title'] %}
+    <dcterms:title>Any new public bitmark</dcterms:title>
+    {% endif %}
+    {% if channel['description'] %}
+    <dcterms:description>This Trigger fires every time you create a new public bitmark.</dcterms:description>
+    {% endif %}
+    
+    {% for oparam in event['output_parameters'] %}
+    <ewe:hasOutputParameter>
+      <owl:Class>
+        <rdfs:SubClassOf rdf:resource="http://gsi.dit.upm.es/ontologies/ewe/ns/OutputParameter"/>
+        {% if oparam['title'] %}
+        <dcterms:title>{{ oparam['title'] }}</dcterms:title>
+    	{% endif %}
+        {% if oparam['description'] %}
+        <dcterms:description>{{ oparam['description'] }}</dcterms:description>
+        {% endif %}
+    	{% if oparam['type'] %}
+        <xsd:type>/{{ oparam['type'] }}</xsdt:type>
+        {% endif %}
+      </owl:Class>
+    </ewe:hasOutputParameter>
+    {% endfor %}
+    
+        {% for iparam in event['output_parameters'] %}
+    <ewe:hasInputParameter>
+      <owl:Class>
+        <rdfs:SubClassOf rdf:resource="http://gsi.dit.upm.es/ontologies/ewe/ns/InputParameter"/>
+        {% if iparam['title'] %}
+        <dcterms:title>{{ iparam['title'] }}</dcterms:title>
+    	{% endif %}
+        {% if iparam['description'] %}
+        <dcterms:description>{{ iparam['description'] }}</dcterms:description>
+        {% endif %}
+    	{% if iparam['example'] %}
+        <ewe:example>/{{ iparam['example'] }}</ewe:example>
+        {% endif %}
+      </owl:Class>
+    </ewe:hasInputParameter>
+    {% endfor %}
+  </owl:Class>
+  {% endfor %}
+
+</rdf:RDF>

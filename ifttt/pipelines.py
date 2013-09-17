@@ -92,28 +92,27 @@ class FileExporterPipeline(object):
 
     def process_item(self, item, spider):
         log.msg("[FileExporterPipeline] Process Item:<" + str(item) + "> found by spider:<" + spider.name + ">", level=log.DEBUG)
-        if isinstance(item, ChannelItem):
-            filename = 'scraped_data/channels/' + item['title'] + '.rdf'
-            with open(filename, 'w') as f:
-                f.write('Item:')                
-                f.write(str(item))
+        filename = 'scraped_data/channels/' + item['title'] + '.rdf'
+        with open(filename, 'w') as f:
+            f.write('Item:')                
+            f.write(str(item))
+            f.write('\n')
+            f.write('Attributes of item:')
+            f.write(getattr(item, 'title_label'))                
+            f.write('\n')
+            for field in item:
+                f.write('Field ')
+                f.write(str(type(field)))
+                f.write(':')
+                f.write(str(field))
+                f.write('=')
+                value = item[field]
+                f.write(str(type(value)))
+                f.write(':')
+                f.write(str(value))
                 f.write('\n')
-                f.write('Attributes of item:')
-                f.write(getattr(item, 'title_label'))                
-                f.write('\n')
-                for field in item:
-                    f.write('Field ')
-                    f.write(str(type(field)))
-                    f.write(':')
-                    f.write(str(field))
-                    f.write('=')
-                    value = item[field]
-                    f.write(str(type(value)))
-                    f.write(':')
-                    f.write(str(value))
-                    f.write('\n')
-                    
-            f.close()
+                
+        f.close()
         return item
     
     def open_spider(self, spider):

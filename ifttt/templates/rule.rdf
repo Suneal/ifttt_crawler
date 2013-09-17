@@ -1,0 +1,30 @@
+<!DOCTYPE rdf:RDF system
+             "http://www.w3.org/XML/9710rdf-dtd/rdf.dtd">
+
+<rdf:RDF 
+	xmlns:foaf="http://xmlns.com/foaf/0.1/" 
+	xmlns:owl="http://www.w3.org/2002/07/owl#" 
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+	xmlns:ewe="http://gsi.dit.upm.es/ontologies/ewe/ns/" 
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema#" 
+	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
+	xmlns:dcterms="http://purl.org/dc/terms/" 
+	xmlns:tags="http://www.holygoat.co.uk/owl/redwood/0.1/tags/" 
+	xmlns="http://gsi.dit.upm.es/ontologies/ewe/ns/">
+	
+  <ewe:Rule rdf:about="{{ item['id'] }}">
+    <ewe:supportedBy rdf:resource="http://ifttt.com" />
+    {% if item['title'] %}<dcterms:title>{{ item['title'] }}</dcterms:title>{% endif %}
+    {% if item['description'] %}<dcterms:description>{{ item['description'] }}</dcterms:description>{% endif %}
+    {% if item['commercial_url'] %}<ewe:pageUrl>{{ item['url'] }}</ewe:pageUrl>{% endif %}
+    {% if item['created_at'] %}<dcterms:created>{{ item['created_at'] }}</dcterms:created>{% endif %}
+    {% if item['created_by'] %}<ewe:hasCreator rdf:resource="{{ item['created_by'] }}" />{% endif %}
+    {% if item['times_used'] %}<ewe:timesUsed>{{ item['times_used'] }}</ewe:timesUsed>{% endif %}
+    <!-- Deprecated fields. Use spin instead -->
+    <ewe:triggeredBy rdf:resource="{{ item['event'] }}" />
+    <ewe:connectsAction rdf:resource="{{ item['action'] }}" />
+    <ewe:triggeringChannel rdf:resource="{{ item['event_channel'] }}" />
+    <ewe:executionChannel rdf:resource="{{ item['action_channel'] }}" />
+  </ewe:Rule>
+
+</rdf:RDF>
