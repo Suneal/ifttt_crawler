@@ -4,6 +4,7 @@
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 from ifttt.items import ChannelItem, ActionItem, EventItem
 from scrapy import log
+from scrapy.item import Item
 
 
 class IftttPipeline(object):
@@ -65,7 +66,51 @@ class IdRegistryPipeline(object):
             log.msg('Action Ids')
             log.msg(str(self.action_ds))
                 
+
+class RemoveEmptyItemsPipeline(object):
+    ''' This pipeline removes all those items scraped where all fields are 
+        empty. This particular situation can occur due to the xpath specific 
+        formater 'text()' does not extract the text from child nodes. Thus,
+        it may be that we fill all fields in the item but all those fields are 
+        empty.
+        
+        Usually, this task usually is quite simple. However, some spider 
+        implementations neste items -including them as values of other item 
+        fields- In that case, all fields need to be validated because for those
+        nested items no scraped_item signal is triggered. 
+        
+        This pipeline has high priority since there is no need to keep 
+        processing those items that will be removed.
+    '''    
+    def __init__(self):
+        log.msg("[RemoveEmptyItemsPipeline] Initialize...", level=log.DEBUG)
+
+    def process_item(self, item, spider):
+        return self._process_item(item)
+    
+    def _process_item(self, item):
+        ''' Remove al not-populated items and nested item stored as fields '''
+        
+        log.msg("[RemoveEmptyItemsPipeline] Processing item:" + str(item), level=log.DEBUG)
+        if not isinstance(item, Item):
+            return item
+        
+        ret = None
+        for field, value in item.items():
+            log.msg("[RemoveEmptyItemsPipeline] Found field " + field + ":" + str(value) ,level=log.DEBUG)
+            if isinstance(value, Item):
+                item[field] = self._process_item(item) # re-asign
+            elif isinstance(value, list):
+                item[field] = [i for i in value if self._process_item(i)]
+            elif value:
+                ret = item
+                
+        if not ret:
+            log.msg("[RemoveEmptyItemsPipeline] Removed empty item", level=log.DEBUG)
             
+        return ret
+
+
 
 class LogPipeline(object):
     ''' Dummy logPipeline for learning purposes only '''

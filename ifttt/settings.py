@@ -15,12 +15,14 @@ NEWSPIDER_MODULE = 'ifttt.spiders'
 #USER_AGENT = 'ifttt (+http://www.yourdomain.com)'
 
 ITEM_PIPELINES = [
+    'ifttt.pipelines.RemoveEmptyItemsPipeline',
     #'ifttt.pipelines.LogPipeline',
     #'ifttt.pipelines.FileExporterPipeline',
     'ifttt.pipelines.IdRegistryPipeline'
+    
     ]
 
 FEED_EXPORTERS_BASE = {
-    #'rdf' : 'ifttt.rdf.exporter.RdfExporter'
-    'rdf' : 'ifttt.rdf.jinja_exporters.RdfExporter'
+    'rdf' : 'ifttt.rdf.exporter.RdfExporter'
+    #'rdf' : 'ifttt.rdf.jinja_exporters.RdfExporter'
 }
