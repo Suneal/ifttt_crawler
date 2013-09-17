@@ -92,17 +92,19 @@ class RemoveEmptyItemsPipeline(object):
         ''' Remove al not-populated items and nested item stored as fields '''
         
         log.msg("[RemoveEmptyItemsPipeline] Processing item:" + str(item), level=log.DEBUG)
-        if not isinstance(item, Item):
+        # Because of recursiveness we may find args that are not items
+        if not isinstance(item, Item): 
             return item
         
+        # iterate over the fields
         ret = None
         for field, value in item.items():
             log.msg("[RemoveEmptyItemsPipeline] Found field " + field + ":" + str(value) ,level=log.DEBUG)
             if isinstance(value, Item):
-                item[field] = self._process_item(item) # re-asign
+                item[field] = self._process_item(item) # Field items  re-assign
             elif isinstance(value, list):
-                item[field] = [i for i in value if self._process_item(i)]
-            elif value:
+                item[field] = [i for i in value if self._process_item(i)] # lists are re-assigned
+            elif value or ret: # When value of the field is not None
                 ret = item
                 
         if not ret:
