@@ -1,5 +1,4 @@
-<!DOCTYPE rdf:RDF system
-             "http://www.w3.org/XML/9710rdf-dtd/rdf.dtd">
+<!DOCTYPE rdf:RDF system "http://www.w3.org/XML/9710rdf-dtd/rdf.dtd">
 
 <rdf:RDF 
 	xmlns:foaf="http://xmlns.com/foaf/0.1/" 
@@ -13,13 +12,13 @@
 	xmlns="http://gsi.dit.upm.es/ontologies/ewe/ns/">
 	
   <ewe:Rule rdf:about="{{ item['id'] }}">
-    <ewe:supportedBy rdf:resource="http://ifttt.com" />
-    {% if item['title'] %}<dcterms:title>{{ item['title'] }}</dcterms:title>{% endif %}
-    {% if item['description'] %}<dcterms:description>{{ item['description'] }}</dcterms:description>{% endif %}
-    {% if item['commercial_url'] %}<ewe:pageUrl>{{ item['url'] }}</ewe:pageUrl>{% endif %}
-    {% if item['created_at'] %}<dcterms:created>{{ item['created_at'] }}</dcterms:created>{% endif %}
-    {% if item['created_by'] %}<ewe:hasCreator rdf:resource="{{ item['created_by'] }}" />{% endif %}
-    {% if item['times_used'] %}<ewe:timesUsed>{{ item['times_used'] }}</ewe:timesUsed>{% endif %}
+    <ewe:supportedBy rdf:resource="http://ifttt.com" />{% if item['title'] %}
+    <dcterms:title>{{ item['title'] }}</dcterms:title>{% endif %}{% if item['description'] %}
+    <dcterms:description>{{ item['description'] }}</dcterms:description>{% endif %}{% if item['commercial_url'] %}
+    <ewe:pageUrl>{{ item['url'] }}</ewe:pageUrl>{% endif %}{% if item['created_at'] %}
+    <dcterms:created>{{ item['created_at'] }}</dcterms:created>{% endif %}{% if item['created_by'] %}
+    <ewe:hasCreator rdf:resource="{{ item['created_by'] }}" />{% endif %}{% if item['times_used'] %}
+    <ewe:timesUsed>{{ item['times_used'] }}</ewe:timesUsed>{% endif %}
     <!-- Deprecated fields. Use spin instead -->
     <ewe:triggeredBy rdf:resource="{{ item['event'] }}" />
     <ewe:connectsAction rdf:resource="{{ item['action'] }}" />
