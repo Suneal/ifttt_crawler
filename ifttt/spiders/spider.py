@@ -5,38 +5,26 @@ Created on Sep 17, 2013
 '''
 from ifttt.items import RecipeItem, ChannelItem, EventItem, InputParameterItem, \
     OutputParameterItem, ActionItem
-from ifttt.loaders import RecipeLoader, ChannelLoader, EventLoader, \
-    InputParameterLoader, OutputParameterLoader
+from ifttt.loaders import RecipeLoader, ChannelLoader, EventActionLoader, BaseEweLoader
     
 from scrapy import log
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from scrapy.contrib.spiders import CrawlSpider, Rule
 from scrapy.http.request import Request
 from scrapy.selector.lxmlsel import HtmlXPathSelector
-
-import re
 import urlparse
 
-class IftttSpider(CrawlSpider):
+class IftttRuleSpider(CrawlSpider):
     ''' '''
-    
-    name = 'ifttt_spider'
+    name = 'ifttt_rules'
     allowed_domains = ["ifttt.com"]
-    start_urls = [ "https://ifttt.com/channels/",
-                   "https://ifttt.com/recipes/"]
+    start_urls = [ "https://ifttt.com/recipes/"]
 
-    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/feed$"), #allow=("https://ifttt.com/[\_\w]+$"), 
-                                     deny=("terms$", "login$", "privacy$", "jobs$", "contact$", "join$", "channels$", "wtf$")),
-                    callback="parse_channel" ),
-             
-             Rule( SgmlLinkExtractor(#allow=("recipes/\d+$", )),
-                               allow=("recipes/117872", "recipes/107031", "recipes/117247")),
+    rules = (Rule( SgmlLinkExtractor(allow=("recipes/\d+$", )),
+#                                 allow=("recipes/117872", "recipes/107031", "recipes/117247")),
                     callback="parse_recipe", 
                     follow=False),
     )
-    
-    xpath_to_events  = '//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_triggers ")]/div/a/@href'
-    xpath_to_actions = '//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_actions ")]/div/a/@href'
     
     def parse_recipe(self, response):
         ''' This function parses a recipe page. 
@@ -63,6 +51,19 @@ class IftttSpider(CrawlSpider):
 
 
 
+class IftttChannelSpider(CrawlSpider):
+    ''' '''
+    name = 'ifttt_channels'
+    allowed_domains = ["ifttt.com"]
+    start_urls = [ "https://ifttt.com/channels/",
+                   ]
+
+    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/[\_\w]+$"), #allow=("https://ifttt.com/bitly$"), 
+                                     deny=("terms$", "login$", "privacy$", "jobs$", "contact$", "join$", "channels$", "wtf$")),
+                    callback="parse_channel" ),
+    )
+    
+
     def parse_channel(self, response):
         ''' This function parses a channel page. 
             Some contracts are mingled with this docstring.
@@ -78,25 +79,22 @@ class IftttSpider(CrawlSpider):
         loader.add_xpath('description', '//article/div/div[2]/div[2]/div[1]')
         loader.add_xpath('logo', '//img[contains(concat(" ",normalize-space(@class)," ")," channel-icon ")]/@src')
         loader.add_xpath('commercial_url', '//article/div/div[2]/div[2]/div[1]/a/@href')
-#         loader.add_xpath('events_generated', self.xpath_to_events)
-#         loader.add_xpath('actions_provided', self.xpath_to_actions)
-        loader.add_value('events_generated', EventItem(id='123', title='prueba', description='evento de prueba'))
-        loader.add_value('events_generated', EventItem(id='124', title='prueba 2', description='evento de prueba 2'))
-        loader.add_value('actions_provided', EventItem(id='12', title='prueba a', description='action de prueba'))
-        loader.add_value('actions_provided', EventItem(id='13', title='prueba a2', description='action de prueba 2')) 
         
-    
-#         hxs = HtmlXPathSelector(response)
-#         for url in hxs.select(self.xpath_to_events).extract():
-#             url = urlparse.urljoin(response.url, url)
-#             yield Request(url, meta={'channel': loader} ,callback=self.parse_event)
-#             
-#         for url in hxs.select(self.xpath_to_actions).extract():
-#             url = urlparse.urljoin(response.url, url)
-#             yield Request(url, meta={'channel': loader}, callback=self.parse_action)
+        hxs = HtmlXPathSelector(response)
+        sequence = [] # subsequent requests
+        for url in hxs.select('//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_triggers ")]/div/a/@href').extract():
+            url = urlparse.urljoin(response.url, url)
+            sequence.append(Request(url, callback=self.parse_event))
+             
+        for url in hxs.select('//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_actions ")]/div/a/@href').extract():
+            url = urlparse.urljoin(response.url, url)
+            sequence.append(Request(url, callback=self.parse_action))
         
- 
-        yield loader.load_item() 
+        # prepare next request
+        rq = sequence.pop()
+        rq.meta['loader'] = loader
+        rq.meta['sequence'] = sequence
+        return rq
  
     
     def parse_event(self, response):
@@ -108,8 +106,9 @@ class IftttSpider(CrawlSpider):
             @returns requests 0
             @scrapes id title description
         '''
-        log.msg("Parse event...", level=log.DEBUG)
-        loader = EventLoader(item=EventItem(), response=response)
+        log.msg("Parse event at " + str(response.url), level=log.DEBUG)
+        
+        loader = EventActionLoader(item=EventItem(), response=response)
         loader.add_value('id', response.url)
         loader.add_xpath('title', '//div[@class="show-trigger-action-show"]/div/div[@class="ta_title"]/text()')
         loader.add_xpath('description', '//div[@class="description"]/text()')
@@ -121,16 +120,13 @@ class IftttSpider(CrawlSpider):
         for selector in hxs.select('//table[@class="show-trigger-action_ingredients_table"]/descendant::tr'):
             loader.add_value('output_parameters', self._parse_event_oparam(selector))
 
-        event = loader.load_item()
-    
-        if response.meta and response.meta.has_key('channel'):
-            channel_ldr = response.meta['channel']
-            log.msg("Meta ")
-            channel_ldr.add_value('events_generated', event)
+        if response.meta:
+            ch_ldr = response.meta['loader']
+            ch_ldr.add_value('events_generated', loader.load_item())
+            return self._dispatch_request(response)
         else:
-            log.msg("No meta")
-            
-        return event
+            log.msg("No meta data found", level = log.WARNING)
+            return loader.load_item()
   
     
     def parse_action(self, response):
@@ -142,8 +138,8 @@ class IftttSpider(CrawlSpider):
             @returns requests 0
             @scrapes id title description input_parameters
         '''        
-        log.msg("Parse event...", level=log.DEBUG)
-        loader = EventLoader(item=ActionItem(), response=response)
+        log.msg("Parse action at " + str(response.url), level=log.DEBUG)
+        loader = EventActionLoader(item=ActionItem(), response=response)
         loader.add_value('id', response.url)
         loader.add_xpath('title', '//div[@class="show-trigger-action-show"]/div/div[@class="ta_title"]/text()')
         loader.add_xpath('description', '//div[@class="description"]/text()')
@@ -152,46 +148,55 @@ class IftttSpider(CrawlSpider):
         for selector in hxs.select('//div[contains(concat(" ",normalize-space(@class)," ")," action-field ")]'):
             loader.add_value('input_parameters', self._parse_action_iparam(selector))
             
-        action = loader.load_item()
-        
-        if response.meta and response.meta.has_key('channel'):
-            channel_ldr = response.meta['channel']
-            log.msg("Meta ")
-            channel_ldr.add_value('actions_provided', action)
+        if response.meta:
+            ch_ldr = response.meta['loader']
+            ch_ldr.add_value('actions_provided', loader.load_item())
+            return self._dispatch_request(response)
         else:
-            log.msg("No meta")
+            log.msg("No meta data found", level = log.WARNING)
+            return loader.load_item()
         
-        return action;
-    
- 
     
     def _parse_event_iparam(self, selector):
-        '''  
-        '''
-        loader = InputParameterLoader(item=InputParameterItem(), selector=selector)
+        ''' It parses an input parameter from the triggers view '''
+        loader = BaseEweLoader(item=InputParameterItem(), selector=selector)
         loader.add_xpath('title', 'label[@class="trigger-field_label"]/text()')
         loader.add_xpath('type', 'label[@class="trigger-field_label"]/@for')
         loader.add_xpath('description', 'descendant::div[@class="action_field_helper_text"]/text()')
         return loader.load_item()
-    
  
     
     def _parse_event_oparam(self, selector):
-        ''' It assumes the selector given is a table row, so the xpath used 
-            to extract the data rely on that. 
+        ''' It parses an output parameter. It assumes the selector given is a 
+            table row, so the xpath used to extract the data rely on that. 
         '''
-        loader = OutputParameterLoader(item=OutputParameterItem(), selector=selector)
+        loader = BaseEweLoader(item=OutputParameterItem(), selector=selector)
         loader.add_xpath('title', 'td[2]/div/text()')
         loader.add_xpath('description', 'td[4]/text()')
         loader.add_xpath('example', 'td[3]/text()')
         return loader.load_item()
 
 
-
     def _parse_action_iparam(self, selector):
-        '''  
-        '''
-        loader = InputParameterLoader(item=InputParameterItem(), selector=selector)
+        ''' It parses an input parameter from the actions view '''
+        loader = BaseEweLoader(item=InputParameterItem(), selector=selector)
         loader.add_xpath('title', 'label/text()')
         loader.add_xpath('description', 'descendant::div[@class="action_field_helper_text"]/text()')
         return loader.load_item()
+
+
+    def _dispatch_request(self, response):
+        ''' Helper method that fetches the list of pending requests,
+            pops one, sets the metadata properly and returns it. 
+            In case there is no pending requests it returns the item
+        '''
+        sequence = response.meta['sequence']
+        if sequence:
+            rq = sequence.pop()
+            rq.meta['loader'] = response.meta['loader']
+            rq.meta['sequence'] = sequence
+            return rq
+        else:
+            return response.meta['loader'].load_item()
+    
+    

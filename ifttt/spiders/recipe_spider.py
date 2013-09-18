@@ -5,8 +5,7 @@ Created on Sep 10, 2013
 '''
 from ifttt.items import RecipeItem, ChannelItem, EventItem, InputParameterItem, \
     OutputParameterItem, ActionItem
-from ifttt.loaders import RecipeLoader, ChannelLoader, EventLoader, \
-    InputParameterLoader, OutputParameterLoader
+from ifttt.loaders import RecipeLoader, ChannelLoader, EventActionLoader, BaseEweLoader
     
 from scrapy import log
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
@@ -121,7 +120,7 @@ class ChannelSpider(CrawlSpider):
             @scrapes id title description
         '''
         log.msg("Parse event...", level=log.DEBUG)
-        loader = EventLoader(item=EventItem(), response=response)
+        loader = EventActionLoader(item=EventItem(), response=response)
         loader.add_value('id', response.url)
         loader.add_xpath('title', '//div[@class="show-trigger-action-show"]/div/div[@class="ta_title"]/text()')
         loader.add_xpath('description', '//div[@class="description"]/text()')
@@ -155,7 +154,7 @@ class ChannelSpider(CrawlSpider):
             @scrapes id title description input_parameters
         '''        
         log.msg("Parse event...", level=log.DEBUG)
-        loader = EventLoader(item=ActionItem(), response=response)
+        loader = EventActionLoader(item=ActionItem(), response=response)
         loader.add_value('id', response.url)
         loader.add_xpath('title', '//div[@class="show-trigger-action-show"]/div/div[@class="ta_title"]/text()')
         loader.add_xpath('description', '//div[@class="description"]/text()')
@@ -180,7 +179,7 @@ class ChannelSpider(CrawlSpider):
     def _parse_event_iparam(self, selector):
         '''  
         '''
-        loader = InputParameterLoader(item=InputParameterItem(), selector=selector)
+        loader = BaseEweLoader(item=InputParameterItem(), selector=selector)
         loader.add_xpath('title', 'label[@class="trigger-field_label"]/text()')
         loader.add_xpath('type', 'label[@class="trigger-field_label"]/@for')
         loader.add_xpath('description', 'descendant::div[@class="action_field_helper_text"]/text()')
@@ -192,7 +191,7 @@ class ChannelSpider(CrawlSpider):
         ''' It assumes the selector given is a table row, so the xpath used 
             to extract the data rely on that. 
         '''
-        loader = OutputParameterLoader(item=OutputParameterItem(), selector=selector)
+        loader = BaseEweLoader(item=OutputParameterItem(), selector=selector)
         loader.add_xpath('title', 'td[2]/div/text()')
         loader.add_xpath('description', 'td[4]/text()')
         loader.add_xpath('example', 'td[3]/text()')
@@ -203,7 +202,7 @@ class ChannelSpider(CrawlSpider):
     def _parse_action_iparam(self, selector):
         '''  
         '''
-        loader = InputParameterLoader(item=InputParameterItem(), selector=selector)
+        loader = BaseEweLoader(item=InputParameterItem(), selector=selector)
         loader.add_xpath('title', 'label/text()')
         loader.add_xpath('description', 'descendant::div[@class="action_field_helper_text"]/text()')
         return loader.load_item()
