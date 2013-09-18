@@ -7,10 +7,6 @@ from scrapy import log
 from scrapy.item import Item
 
 
-class IftttPipeline(object):
-    def process_item(self, item, spider):
-        return item
-
 class IdRegistryPipeline(object):
     ''' '''
     
@@ -38,6 +34,8 @@ class IdRegistryPipeline(object):
             # Register new ids
             if not item['title']:
                 log.msg("[IdRegistryPipeline] The item consideren has no title field:" + str(item), level=log.WARNING)
+            elif type(item['title']) not in [str, unicode]:
+                log.msg("[IdRegistryPipeline] Type of title field is:" + str(type(item['title'])), level=log.WARNING)
             elif self.id_ds.get(item['title'], None):
                 log.msg("[IdRegistryPipeline] The Item <" + str(item['title']) + 
                         "> alreay exists on the data map. Current mapping is:" + 
@@ -93,7 +91,7 @@ class RemoveEmptyItemsPipeline(object):
         # iterate over the fields
         ret = None
         for field, value in item.items():
-            log.msg("[RemoveEmptyItemsPipeline] Found field " + field + ":" + str(value) ,level=log.DEBUG)
+            log.msg("[RemoveEmptyItemsPipeline] Found field " + str(field) + ":" + repr(value) ,level=log.DEBUG)
             if isinstance(value, Item):
                 item[field] = self._process_item(item) # Field items  re-assign
             elif isinstance(value, list):
@@ -106,23 +104,6 @@ class RemoveEmptyItemsPipeline(object):
             
         return ret
 
-
-
-class LogPipeline(object):
-    ''' Dummy logPipeline for learning purposes only '''
-    def __init__(self):
-        log.msg("[LogPipeline] Initialize...", level=log.DEBUG)
-        pass
-
-    def process_item(self, item, spider):
-        log.msg("[LogPipeline] Process Item:<" + str(item) + "< found by spider:<" + spider.name + ">", level=log.DEBUG)
-        return item
-    
-    def open_spider(self, spider):
-        log.msg("[LogPipeline] Open spider:" + spider.name, level=log.DEBUG)
-    
-    def close_spider(self, spider):
-        log.msg("[LogPipeline] Close spider:" + spider.name, level=log.DEBUG)
 
 
 class FileExporterPipeline(object):
