@@ -23,6 +23,7 @@ ITEM_PIPELINES = [
     ]
 
 FEED_EXPORTERS = {
-    'rdf' : 'ifttt.rdf.jinja_exporters.RdfExporter',
+    #'rdf' : 'ifttt.rdf.jinja_exporters.JinjaExporter',
+    'rdf' : 'ifttt.rdf.jinja_exporters.JinjaExporterMultifile',
     'rdf2' : 'ifttt.rdf.exporter.RdfExporter',
 }
