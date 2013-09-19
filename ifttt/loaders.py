@@ -6,16 +6,18 @@ Scrapy Item Loaders definition
 @author: miguel
 '''
 from scrapy.contrib.loader import XPathItemLoader
-from scrapy.contrib.loader.processor import MapCompose, TakeFirst, Join, Identity
-import html2text
+from scrapy.contrib.loader.processor import MapCompose, TakeFirst, Join, \
+    Identity
+import html2text as h2t
 import re
+import unicodedata
 import urlparse
 
 def strip(s):
-    ''' This removes all whitespaces at the beggining or end of the given 
-        string. Every textual input is modified using this function. If the
-        argument is unicode, it performs some html2text operations before 
-        strip to remove all remaining html tags.
+    ''' This performs some html2text operations to remove html tags before 
+        stripping all remaining all whitespaces at the beggining or end of the given 
+        string. If there are sone line breaks inside the string they are also removed.
+        Unicode arguments are encoded as 'utf8'. All error are ignored. 
         
         Args:
             s(str):    The string to format
@@ -30,17 +32,24 @@ def strip(s):
         'hi there'
         
         >>> strip(u'<span>hello <b>friends</b></span>')
-        u'hello friends'
+        'hello friends'
         '''
     
     if isinstance(s, str):
-        return s.strip().replace('\n','')
+        try:
+            converter = h2t.HTML2Text()
+            converter.ignore_links = True
+            plain = converter.handle(s)
+        except UnicodeDecodeError:
+            plain = s
+        
+        return plain.strip().replace('\n','')
+#         return s.strip().replace('\n','')
 
     if isinstance(s, unicode):
-        return strip(str(s))
-#         converter = html2text.HTML2Text()
-#         converter.ignore_links = True
-#         return converter.handle(s).strip().replace('\n','')
+#         s = unicodedata.normalize('NFKD', s)
+        return strip(s.encode('ascii', 'ignore'))
+#         return strip(str(s))
     
     return s # If not str or unicode, do nothing
 
