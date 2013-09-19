@@ -89,7 +89,7 @@ class IdRegistryPipeline(object):
 
     def _register_item(self, item):
         
-        log.msg("Register_item:" + str(item))
+        log.msg("[IdRegistryPipeline] Register_item:" + str(item), level = log.DEBUG)
         if type(item) in [ChannelItem, EventItem, ActionItem]:
             # Register new ids
             if not item['title']:
@@ -111,15 +111,15 @@ class IdRegistryPipeline(object):
         # Check for field with items as value
         # Here, we consider all items not only those with replacements
         if isinstance(item, Item):
-            log.msg("Fields:" + str(item.keys()), level=log.DEBUG)
+            log.msg("[IdRegistryPipeline] Fields:" + str(item.keys()), level=log.DEBUG)
             for field in item.keys():
                 val = item[field]
-                log.msg("Field: " + str(field) + ">>" + str(val), level=log.DEBUG)
+                log.msg("[IdRegistryPipeline] Field: " + str(field) + ">>" + str(val), level=log.DEBUG)
                 if isinstance(val, Item):
-                    log.msg("It is item:" + str(val))
+                    log.msg("[IdRegistryPipeline] It is item:" + str(val))
                     self._register_item(val)
                 elif isinstance(val, list):
-                    log.msg("It is a list:" + str(val), level=log.DEBUG)
+                    log.msg("[IdRegistryPipeline] It is a list:" + str(val), level=log.DEBUG)
                     for i in val:
                         log.msg("List member: " + str(i), level=log.DEBUG)
                         self._register_item(i)
