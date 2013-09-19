@@ -3,15 +3,21 @@ Created on Sep 17, 2013
 
 @author: miguel
 '''
-from ifttt.rdf.errors import ExporterException
-from jinja2 import Environment, PackageLoader
+from urlparse import urlparse
+from os.path import dirname, abspath, splitext
+import os
+import re
+
 from scrapy import log
 from scrapy.contrib.exporter import BaseItemExporter
-import os
+
+from ifttt.items import ChannelItem, RecipeItem
+from jinja2 import Environment, PackageLoader
 
 
 class JinjaExporter(BaseItemExporter):
-    
+    ''' 
+    '''
     def __init__(self, file, **kwargs):
         # This should extract the name of the package automatically
         self.env = Environment(loader=PackageLoader('ifttt', 'templates'))
@@ -46,18 +52,16 @@ class JinjaExporter(BaseItemExporter):
 
 
 class JinjaExporterMultifile(JinjaExporter):
-    '''
+    ''' 
         Args:
-            file(File) - a folder that points 
+            file(File) - a file
     '''
     def __init__(self, file, **kwargs):
         # This should extract the name of the package automatically
-        self.env = Environment(loader=PackageLoader('ifttt', 'templates'))
-#         if not os.path.isdir(file):
-#             raise ExporterException("JinjaExporterMultifile file argument representa a folder instead of a simple file")
-#         if not os.path.exists(file):
-#             raise ExporterException("The given folder does not exist")
         self.file = file
+        self.env = Environment(loader=PackageLoader('ifttt', 'templates'))
+        self.folder = dirname(abspath(file.name))
+        self.extension = splitext(file.name)[1]
 
     def export_item(self, item):
         ''' This method is called each time the scrapped_item signal is 
@@ -81,10 +85,34 @@ class JinjaExporterMultifile(JinjaExporter):
         
         # Save to file
         #fpath = os.path.join(os.path.abspath(self.file), self.get_valid_name(item))
-        fpath = os.path.join('scraped_data/channels/', self.get_valid_name(item))
-        with open(fpath, 'w') as fw:        
+        fpath = os.path.join(self.folder, self.get_valid_name(item))
+        with open(fpath, 'wt') as fw:        
             fw.write(out)
         fw.close()
     
     def get_valid_name(self, item):
-        return "%s.rdf" % str(item['title'])
+        ''' Common method used to get the name of each file used. 
+            The policy is as follows. 
+            
+            If the item given is of type RecipeItem, the numerical id
+            is taken preceded by the TaskAutomationServiced use to 
+            orquestrate the rule. 
+            
+            If it fails or the items is not of type RecipeITem, 'title' is 
+            used as name.
+            
+            The extension used is the extension of the file given when 
+            creating the exporter.
+        '''
+        if isinstance(item, RecipeItem):
+            try:
+                id = re.search("\d+$", item['id']).group()
+                tas = urlparse(item['supported_by']).netloc
+                return 'Rule_' + tas + '_' + id + self.extension
+            except:
+                pass
+        
+        name = str(item['title']) + self.extension
+        return str.replace(name, ' ', '_')
+        
+        

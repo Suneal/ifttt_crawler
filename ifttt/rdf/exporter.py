@@ -3,14 +3,22 @@ Created on Sep 15, 2013
 
 @author: miguel
 '''
-from urlparse import urlparse
-import xml.dom.minidom
 from lxml import etree
 from scrapy import log
-from scrapy.contrib.exporter import XmlItemExporter
+from scrapy.conf import settings
+from scrapy.contrib.exporter import XmlItemExporter, CsvItemExporter
+from urlparse import urlparse
 
 
 class RdfExporter(XmlItemExporter):
+    ''' This exporter requieres that each item has for each field an 
+        additional attribute with the same name ending by "_label" that 
+        representes the tag label used. Samely, if the field is to be 
+        a reference instead of a value use an additionsl field ending
+        by "_asAttr" whose value is True is needed
+        
+        This exporter is deprecated in favour of jinja exporter 
+        '''
     
     NS = {'owl' : 'http://www.w3.org/2002/07/owl#', 
           'rdf' : 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
