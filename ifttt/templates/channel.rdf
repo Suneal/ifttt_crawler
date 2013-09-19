@@ -32,7 +32,7 @@
         <rdfs:SubClassOf rdf:resource="http://gsi.dit.upm.es/ontologies/ewe/ns/OutputParameter"/> {% if oparam['title'] %}
         <dcterms:title>{{ oparam['title'] }}</dcterms:title> {% endif %}{% if oparam['description'] %}
         <dcterms:description>{{ oparam['description'] }}</dcterms:description> {% endif %}{% if oparam['example'] %}
-        <ewe:example>/{{ oparam['example'] }}</ewe:example> {% endif %}
+        <ewe:example>{{ oparam['example'] }}</ewe:example> {% endif %}
       </owl:Class>
     </ewe:hasOutputParameter>{% endfor %}{% for iparam in event['input_parameters'] %}
     <ewe:hasInputParameter>
@@ -40,12 +40,11 @@
         <rdfs:SubClassOf rdf:resource="http://gsi.dit.upm.es/ontologies/ewe/ns/InputParameter"/> {% if iparam['title'] %}
         <dcterms:title>{{ iparam['title'] }}</dcterms:title> {% endif %}{% if iparam['description'] %}
         <dcterms:description>{{ iparam['description'] }}</dcterms:description> {% endif %}{% if iparam['type'] %}
-        <xsd:type>/{{ iparam['type'] }}</xsdt:type> {% endif %}
+        <xsd:type>{{ iparam['type'] }}</xsdt:type> {% endif %}
       </owl:Class>
     </ewe:hasInputParameter>
     {% endfor %}
-  </owl:Class>
-  {% endfor %}
+  </owl:Class>{% endfor %}
   
   {% for action in item['actions_provided'] %}
   <owl:Class rdf:about="{{ action['id'] }}">
@@ -57,7 +56,7 @@
         <rdfs:SubClassOf rdf:resource="http://gsi.dit.upm.es/ontologies/ewe/ns/OutputParameter"/> {% if oparam['title'] %}
         <dcterms:title>{{ oparam['title'] }}</dcterms:title>{% endif %}{% if oparam['description'] %}
         <dcterms:description>{{ oparam['description'] }}</dcterms:description>{% endif %}{% if oparam['example'] %}
-        <ewe:example>/{{ oparam['example'] }}</ewe:example>{% endif %}
+        <ewe:example>{{ oparam['example'] }}</ewe:example>{% endif %}
       </owl:Class>
     </ewe:hasOutputParameter> {% endfor %}{% for iparam in action['input_parameters'] %}
     <ewe:hasInputParameter>
@@ -65,7 +64,7 @@
         <rdfs:SubClassOf rdf:resource="http://gsi.dit.upm.es/ontologies/ewe/ns/InputParameter"/> {% if iparam['title'] %}
         <dcterms:title>{{ iparam['title'] }}</dcterms:title>{% endif %}{% if iparam['description'] %}
         <dcterms:description>{{ iparam['description'] }}</dcterms:description>{% endif %}{% if iparam['type'] %}
-        <xsd:type>/{{ iparam['type'] }}</xsdt:type>{% endif %}
+        <xsd:type>{{ iparam['type'] }}</xsdt:type>{% endif %}
       </owl:Class>
     </ewe:hasInputParameter>
     {% endfor %}
