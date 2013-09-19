@@ -11,15 +11,15 @@
 	xmlns:tags="http://www.holygoat.co.uk/owl/redwood/0.1/tags/" 
 	xmlns="http://gsi.dit.upm.es/ontologies/ewe/ns/">
 	
-  <ewe:Rule rdf:about="{{ item['id'] }}">
-    <ewe:supportedBy rdf:resource="http://ifttt.com" />{% if item['title'] %}
+  <ewe:Rule rdf:about="{{ item['id'] }}">{% if item['supported_by'] %}
+    <ewe:supportedBy rdf:resource="{{item['supported_by']}}" />{% endif %}{% if item['title'] %}
     <dcterms:title>{{ item['title'] }}</dcterms:title>{% endif %}{% if item['description'] %}
     <dcterms:description>{{ item['description'] }}</dcterms:description>{% endif %}{% if item['commercial_url'] %}
     <ewe:pageUrl>{{ item['url'] }}</ewe:pageUrl>{% endif %}{% if item['created_at'] %}
     <dcterms:created>{{ item['created_at'] }}</dcterms:created>{% endif %}{% if item['created_by'] %}
     <ewe:hasCreator rdf:resource="{{ item['created_by'] }}" />{% endif %}{% if item['times_used'] %}
     <ewe:timesUsed>{{ item['times_used'] }}</ewe:timesUsed>{% endif %}
-    <!-- Deprecated fields. Use spin instead -->
+    <!-- Relational fields. Used to make analysis easy without need of sparql queries -->
     <ewe:triggeredBy rdf:resource="{{ item['event'] }}" />
     <ewe:connectsAction rdf:resource="{{ item['action'] }}" />
     <ewe:triggeringChannel rdf:resource="{{ item['event_channel'] }}" />

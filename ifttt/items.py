@@ -26,9 +26,10 @@ class RecipeItem(Item):
     created_by = Field()
     times_used = Field()
     created_at = Field()
+    supported_by = Field()
     
     def __str__(self, *args, **kwargs):
-        return "<Event " + str(self.get('title', '')) + ">"
+        return str(self.get('title', ''))
 
 class ChannelItem(Item):
     ''' Class that represents a Channel according to Ifttt definition.

@@ -18,10 +18,10 @@ class IftttRuleSpider(CrawlSpider):
     ''' '''
     name = 'ifttt_rules'
     allowed_domains = ["ifttt.com"]
-    start_urls = [ "https://ifttt.com/recipes/"]
+    start_urls = [ "https://ifttt.com/recipes"]
 
-    rules = (Rule( SgmlLinkExtractor(allow=("recipes/\d+$", )),
-#                                 allow=("recipes/117872", "recipes/107031", "recipes/117247")),
+    rules = (Rule( SgmlLinkExtractor(allow=("recipes/\d+$", "recipes?page=")),
+                                #allow=("recipes/118306", "recipes/113399", "recipes/118276", "recipes/115934")),
                     callback="parse_recipe", 
                     follow=False),
     )
@@ -36,6 +36,7 @@ class IftttRuleSpider(CrawlSpider):
             @scrapes url id title description event_channel event action_channel action created_by created_at times_used
         '''
         loader = RecipeLoader(item=RecipeItem(), response=response)
+        loader.add_value('supported_by', 'https://ifttt.com/')
         loader.add_value('url', response.url)
         loader.add_value('id', response.url)
         loader.add_xpath('title','//h1/span[@itemprop="name"]/text()')
@@ -58,7 +59,8 @@ class IftttChannelSpider(CrawlSpider):
     start_urls = [ "https://ifttt.com/channels/",
                    ]
 
-    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/[\_\w]+$"), #allow=("https://ifttt.com/bitly$"), 
+    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/[\_\w]+$"), 
+                                     #allow=("https://ifttt.com/sms"), 
                                      deny=("terms$", "login$", "privacy$", "jobs$", "contact$", "join$", "channels$", "wtf$")),
                     callback="parse_channel" ),
     )

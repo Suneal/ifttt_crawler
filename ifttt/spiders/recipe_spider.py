@@ -47,6 +47,7 @@ class RecipeSpider(CrawlSpider):
             @scrapes url id title description event_channel event action_channel action created_by created_at times_used
         '''
         loader = RecipeLoader(item=RecipeItem(), response=response)
+        loader.add_value('supported_by', 'https://ifttt.com/')
         loader.add_value('url', response.url)
         loader.add_value('id', get_id(response.url))
         loader.add_xpath('title','//h1/span[@itemprop="name"]/text()')
@@ -69,7 +70,7 @@ class ChannelSpider(CrawlSpider):
     start_urls = [ "https://ifttt.com/channels/",
                   ]
     
-    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/bitly$"), #allow=("https://ifttt.com/[\_\w]+$"), 
+    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/yammer"), #allow=("https://ifttt.com/[\_\w]+$"), 
                                      deny=("terms$", "login$", "privacy$", "jobs$", "contact$", "join$", "channels$", "wtf$")),
                     callback="parse_channel" ),
              )
