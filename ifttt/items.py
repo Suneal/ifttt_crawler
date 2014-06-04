@@ -18,7 +18,7 @@ class RecipeItem(Item):
     id = Field()
     title = Field()
     description = Field()
-    url = Field() # this should be id
+    url = Field()  # this should be id
     event = Field()
     event_channel = Field()
     action = Field()
@@ -40,7 +40,7 @@ class ChannelItem(Item):
     template = 'channel'
     
     # Fields    
-    id = Field() # Not a number a unique string
+    id = Field()  # Not a number a unique string
     
     title_label = 'dcterms:title'
     title = Field()
@@ -139,7 +139,7 @@ class OutputParameterItem(Item):
     title = Field()
     
     description_label = 'dcterms:description'
-    description = Field() # Name + Notes
+    description = Field()  # Name + Notes
     
     example_label = 'ewe:example'
     example = Field()

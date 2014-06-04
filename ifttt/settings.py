@@ -12,18 +12,18 @@ SPIDER_MODULES = ['ifttt.spiders']
 NEWSPIDER_MODULE = 'ifttt.spiders'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = 'ifttt (+http://www.yourdomain.com)'
+# USER_AGENT = 'ifttt (+http://www.yourdomain.com)'
 
 ITEM_PIPELINES = [
     'ifttt.pipelines.RemoveEmptyItemsPipeline',
-    #'ifttt.pipelines.LogPipeline',
-    #'ifttt.pipelines.FileExporterPipeline',
+    # 'ifttt.pipelines.LogPipeline',
+    # 'ifttt.pipelines.FileExporterPipeline',
     'ifttt.pipelines.IdRegistryPipeline'
     
     ]
 
 FEED_EXPORTERS = {
-    #'rdf' : 'ifttt.rdf.jinja_exporters.JinjaExporter',
+    # 'rdf' : 'ifttt.rdf.jinja_exporters.JinjaExporter',
     'rdf' : 'ifttt.rdf.jinja_exporters.JinjaExporterMultifile',
     'rdf2' : 'ifttt.rdf.exporter.RdfExporter',
 }

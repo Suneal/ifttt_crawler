@@ -30,11 +30,11 @@ class RecipeSpider(CrawlSpider):
     allowed_domains = ["ifttt.com"]
     start_urls = [ "https://ifttt.com/recipes/", ]
     
-    rules = (Rule (SgmlLinkExtractor(#allow=("recipes/\d+$", )),
-                                     allow=("recipes/117830", )),
-                   callback="parse_recipe", 
+    rules = (Rule (SgmlLinkExtractor(# allow=("recipes/\d+$", )),
+                                     allow=("recipes/117830",)),
+                   callback="parse_recipe",
                    follow=False),
-             #Rule (SgmlLinkExtractor(allow=("recipes",))),
+             # Rule (SgmlLinkExtractor(allow=("recipes",))),
     )
     
     def parse_recipe(self, response):
@@ -50,15 +50,15 @@ class RecipeSpider(CrawlSpider):
         loader.add_value('supported_by', 'https://ifttt.com/')
         loader.add_value('url', response.url)
         loader.add_value('id', get_id(response.url))
-        loader.add_xpath('title','//h1/span[@itemprop="name"]/text()')
-        loader.add_xpath('description','//span[@itemprop="description"]/text()')
+        loader.add_xpath('title', '//h1/span[@itemprop="name"]/text()')
+        loader.add_xpath('description', '//span[@itemprop="description"]/text()')
         loader.add_xpath('event_channel', '//span[@class="recipe_trigger"]/@title')
         loader.add_xpath('event', '//span[@class="recipe_trigger"]/span/text()')
         loader.add_xpath('action_channel', '//span[@class="recipe_action"]/@title')
         loader.add_xpath('action', '//span[@class="recipe_action"]/span/text()')
         loader.add_xpath('created_by', '//span[@itemprop="author"]/a/text()')
         loader.add_xpath('created_at', '//span[@itemprop="datePublished"]/@datetime')
-        loader.add_xpath('times_used','//div[3]/div[2]/div[1]/div[3]/text()', re="(\d+)")  
+        loader.add_xpath('times_used', '//div[3]/div[2]/div[1]/div[3]/text()', re="(\d+)")  
         return loader.load_item()
 
 
@@ -70,12 +70,12 @@ class ChannelSpider(CrawlSpider):
     start_urls = [ "https://ifttt.com/channels/",
                   ]
     
-    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/yammer"), #allow=("https://ifttt.com/[\_\w]+$"), 
+    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/yammer"),  # allow=("https://ifttt.com/[\_\w]+$"), 
                                      deny=("terms$", "login$", "privacy$", "jobs$", "contact$", "join$", "channels$", "wtf$")),
-                    callback="parse_channel" ),
+                    callback="parse_channel"),
              )
 
-    xpath_to_events  = '//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_triggers ")]/div/a/@href'
+    xpath_to_events = '//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_triggers ")]/div/a/@href'
     xpath_to_actions = '//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_actions ")]/div/a/@href'
 
 
@@ -103,7 +103,7 @@ class ChannelSpider(CrawlSpider):
         hxs = HtmlXPathSelector(response)
         for url in hxs.select(self.xpath_to_events).extract():
             url = urlparse.urljoin(response.url, url)
-            yield Request(url, meta={'channel': channel} ,callback=self.parse_event)
+            yield Request(url, meta={'channel': channel} , callback=self.parse_event)
             
         for url in hxs.select(self.xpath_to_actions).extract():
             url = urlparse.urljoin(response.url, url)

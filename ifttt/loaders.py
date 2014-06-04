@@ -43,7 +43,7 @@ def strip(s):
         except UnicodeDecodeError:
             plain = s
         
-        return plain.strip().replace('\n','')
+        return plain.strip().replace('\n', '')
 #         return s.strip().replace('\n','')
 
     if isinstance(s, unicode):
@@ -51,7 +51,7 @@ def strip(s):
         return strip(s.encode('ascii', 'ignore'))
 #         return strip(str(s))
     
-    return s # If not str or unicode, do nothing
+    return s  # If not str or unicode, do nothing
 
 def erase_channel(s):
     ''' This function removes the word 'Channel' at the end of the string given.
@@ -111,7 +111,7 @@ class ChannelLoader(BaseEweLoader):
         title, contextualizes the logo uri and keep the list of events and 
         actions in the output.
     '''
-    title_in = MapCompose(strip, erase_channel) # first function applied first
+    title_in = MapCompose(strip, erase_channel)  # first function applied first
     description_out = Join()
     logo_in = MapCompose(contextualize)
     

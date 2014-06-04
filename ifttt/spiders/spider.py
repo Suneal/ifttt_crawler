@@ -20,9 +20,9 @@ class IftttRuleSpider(CrawlSpider):
     allowed_domains = ["ifttt.com"]
     start_urls = [ "https://ifttt.com/recipes"]
 
-    rules = (Rule( SgmlLinkExtractor(allow=("recipes/\d+$", "recipes?page=")),
-                                #allow=("recipes/118306", "recipes/113399", "recipes/118276", "recipes/115934")),
-                    callback="parse_recipe", 
+    rules = (Rule(SgmlLinkExtractor(allow=("recipes/\d+$", "recipes?page=")),
+                                # allow=("recipes/118306", "recipes/113399", "recipes/118276", "recipes/115934")),
+                    callback="parse_recipe",
                     follow=False),
     )
     
@@ -39,15 +39,15 @@ class IftttRuleSpider(CrawlSpider):
         loader.add_value('supported_by', 'https://ifttt.com/')
         loader.add_value('url', response.url)
         loader.add_value('id', response.url)
-        loader.add_xpath('title','//h1/span[@itemprop="name"]/text()')
-        loader.add_xpath('description','//span[@itemprop="description"]/text()')
+        loader.add_xpath('title', '//h1/span[@itemprop="name"]/text()')
+        loader.add_xpath('description', '//span[@itemprop="description"]/text()')
         loader.add_xpath('event_channel', '//span[@class="recipe_trigger"]/@title')
         loader.add_xpath('event', '//span[@class="recipe_trigger"]/span/text()')
         loader.add_xpath('action_channel', '//span[@class="recipe_action"]/@title')
         loader.add_xpath('action', '//span[@class="recipe_action"]/span/text()')
         loader.add_xpath('created_by', '//span[@itemprop="author"]/a/@href')
         loader.add_xpath('created_at', '//span[@itemprop="datePublished"]/@datetime')
-        loader.add_xpath('times_used','//div[3]/div[2]/div[1]/div[3]/text()', re="(\d+)")  
+        loader.add_xpath('times_used', '//div[3]/div[2]/div[1]/div[3]/text()', re="(\d+)")  
         return loader.load_item()
 
 
@@ -59,10 +59,10 @@ class IftttChannelSpider(CrawlSpider):
     start_urls = [ "https://ifttt.com/channels/",
                    ]
 
-    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/[\_\w]+$"), 
-                                     #allow=("https://ifttt.com/sms"), 
+    rules = (Rule (SgmlLinkExtractor(allow=("https://ifttt.com/[\_\w]+$"),
+                                     # allow=("https://ifttt.com/sms"), 
                                      deny=("terms$", "login$", "privacy$", "jobs$", "contact$", "join$", "channels$", "wtf$")),
-                    callback="parse_channel" ),
+                    callback="parse_channel"),
     )
     
 
@@ -83,7 +83,7 @@ class IftttChannelSpider(CrawlSpider):
         loader.add_xpath('commercial_url', '//article/div/div[2]/div[2]/div[1]/a/@href')
         
         hxs = HtmlXPathSelector(response)
-        sequence = [] # subsequent requests
+        sequence = []  # subsequent requests
         for url in hxs.select('//div[contains(concat(" ",normalize-space(@class)," ")," channel-page_triggers ")]/div/a/@href').extract():
             url = urlparse.urljoin(response.url, url)
             sequence.append(Request(url, callback=self.parse_event))
@@ -127,7 +127,7 @@ class IftttChannelSpider(CrawlSpider):
             ch_ldr.add_value('events_generated', loader.load_item())
             return self._dispatch_request(response)
         else:
-            log.msg("No meta data found", level = log.WARNING)
+            log.msg("No meta data found", level=log.WARNING)
             return loader.load_item()
   
     
@@ -155,7 +155,7 @@ class IftttChannelSpider(CrawlSpider):
             ch_ldr.add_value('actions_provided', loader.load_item())
             return self._dispatch_request(response)
         else:
-            log.msg("No meta data found", level = log.WARNING)
+            log.msg("No meta data found", level=log.WARNING)
             return loader.load_item()
         
     

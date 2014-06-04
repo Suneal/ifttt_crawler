@@ -48,7 +48,7 @@ class JinjaExporterMultifile(BaseItemExporter):
         log.msg("[JinjaExporter] Template rendered", level=log.DEBUG)
         
         # Save to file
-        #fpath = os.path.join(os.path.abspath(self.file), self.get_valid_name(item))
+        # fpath = os.path.join(os.path.abspath(self.file), self.get_valid_name(item))
         fpath = os.path.join(self.folder, self.get_valid_name(item))
         with open(fpath, 'wt') as fw:        
             fw.write(out)

@@ -44,7 +44,7 @@ class IdRegistryPipeline(object):
          >>> print item['event_channel'] 
          'https://ifttt.com/Gmail'          
     '''
-    ds_filename= 'id_datastore'
+    ds_filename = 'id_datastore'
     REPLACE_FIELDS = ['action', 'action_channel', 'event', 'event_channel']
     id_ds = {}    
     
@@ -89,7 +89,7 @@ class IdRegistryPipeline(object):
 
     def _register_item(self, item):
         
-        log.msg("[IdRegistryPipeline] Register_item:" + str(item), level = log.DEBUG)
+        log.msg("[IdRegistryPipeline] Register_item:" + str(item), level=log.DEBUG)
         if type(item) in [ChannelItem, EventItem, ActionItem]:
             # Register new ids
             if not item['title']:
@@ -99,12 +99,12 @@ class IdRegistryPipeline(object):
             elif self.id_ds.get(item['title'], None):
                 log.msg("[IdRegistryPipeline] The Item <" + str(item['title']) + 
                         "> alreay exists on the data map. Current mapping is:" + 
-                        str(self.id_ds[item['title']]) + ". New proposal is " + str(item['id']), 
+                        str(self.id_ds[item['title']]) + ". New proposal is " + str(item['id']),
                         log.WARNING)
             else:
                 log.msg("[IdRegistryPipeline] The Item with title <" + str(item['title']) + 
-                        "> has been associated to the id:" + str(item['id']), 
-                        level = log.DEBUG)
+                        "> has been associated to the id:" + str(item['id']),
+                        level=log.DEBUG)
                 self.id_ds[item['title']] = item['id']
             
             
@@ -157,12 +157,12 @@ class RemoveEmptyItemsPipeline(object):
         # iterate over the fields
         ret = None
         for field, value in item.items():
-            log.msg("[RemoveEmptyItemsPipeline] Found field " + str(field) + ":" + repr(value) ,level=log.DEBUG)
+            log.msg("[RemoveEmptyItemsPipeline] Found field " + str(field) + ":" + repr(value) , level=log.DEBUG)
             if isinstance(value, Item):
-                item[field] = self._process_item(item) # Field items  re-assign
+                item[field] = self._process_item(item)  # Field items  re-assign
             elif isinstance(value, list):
-                item[field] = [i for i in value if self._process_item(i)] # lists are re-assigned
-            elif value or ret: # When value of the field is not None
+                item[field] = [i for i in value if self._process_item(i)]  # lists are re-assigned
+            elif value or ret:  # When value of the field is not None
                 ret = item
                 
         if not ret:

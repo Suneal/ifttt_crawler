@@ -20,7 +20,7 @@ class RdfExporter(XmlItemExporter):
         This exporter is deprecated in favour of jinja exporter 
         '''
     
-    NS = {'owl' : 'http://www.w3.org/2002/07/owl#', 
+    NS = {'owl' : 'http://www.w3.org/2002/07/owl#',
           'rdf' : 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
           'rdfs': 'http://www.w3.org/2000/01/rdf-schema#',
           'xsd' : 'http://www.w3.org/2001/XMLSchema#',
@@ -51,11 +51,11 @@ class RdfExporter(XmlItemExporter):
         # Item root element and subClass entry
         item_root = etree.Element(self._parse_tagname('owl:Class'), nsmap=self.NS)        
         subClass = etree.Element(self._parse_tagname('rdfs:SubClassOf'), nsmap=self.NS)
-        subClass.set(self._parse_tagname('rdf:resource'), 
+        subClass.set(self._parse_tagname('rdf:resource'),
                      self._expand_tagname(elem_name))        
         item_root.append(subClass)
           
-        ## iterate over the fields
+        # # iterate over the fields
         for field in item.keys():
             # Continue for fields not populated
             if not field in item:
@@ -82,21 +82,21 @@ class RdfExporter(XmlItemExporter):
             if value_type in [str, unicode]:
                 elem = etree.SubElement(item_root, self._parse_tagname(getattr(item, field + '_label')), nsmap=self.NS)
                 if getattr(item, field + 'asAttr', False): 
-                    elem.set(self._parse_tagname('rdfs:resource'), value) # ...either resource...
+                    elem.set(self._parse_tagname('rdfs:resource'), value)  # ...either resource...
                 else: 
-                    elem.text = value # ...or content
+                    elem.text = value  # ...or content
             
             # Iterate over the lists
             elif value_type in [list]:
                 log.msg("Exporting list field:" + field, level=log.WARNING)
                 for ith_value in value:
-                    log.msg(">>" + str(type(ith_value)) + "-"+ str(ith_value), level=log.WARNING)
+                    log.msg(">>" + str(type(ith_value)) + "-" + str(ith_value), level=log.WARNING)
                     elem = etree.SubElement(item_root, self._parse_tagname(getattr(item, field + '_label')), nsmap=self.NS)
                     if type(ith_value) in [str, unicode]:
                         if getattr(item, field + 'asAttr', False): 
-                            elem.set(self._parse_tagname('rdfs:resource'), ith_value) # ...either resource...
+                            elem.set(self._parse_tagname('rdfs:resource'), ith_value)  # ...either resource...
                         else:
-                            elem.text = ith_value # ...or content
+                            elem.text = ith_value  # ...or content
                     else:
                         pass
                         self.export_item(ith_value, elem)
