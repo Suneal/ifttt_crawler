@@ -166,7 +166,8 @@ class ChannelSpider(CrawlSpider):
             
         action = loader.load_item()
         
-        if response.meta and response.meta.hasattr('channel'):
+        if response.meta and 'channel' in response.meta:
+        #if response.meta and response.meta.hasattr('channel'):
             channel = response.meta['channel']
             log.msg("Meta" + str(channel))
             channel['actions_provided'] = action
