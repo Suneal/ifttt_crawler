@@ -3,17 +3,15 @@ Created on Sep 10, 2013
 
 @author: miguel
 '''
-from ifttt import loaders
-from ifttt.items import RecipeItem, ChannelItem, EventItem, InputParameterItem, \
+from ewescrapers.items import RecipeItem, ChannelItem, EventItem, InputParameterItem, \
     OutputParameterItem, ActionItem
-from ifttt.loaders import RecipeLoader, ChannelLoader, EventActionLoader, \
+from ewescrapers.loaders import RecipeLoader, ChannelLoader, EventActionLoader, \
     BaseEweLoader
 from scrapy.http.request import Request
 from scrapy.linkextractors import LinkExtractor
 from scrapy.selector.lxmlsel import HtmlXPathSelector
 from scrapy.spiders import CrawlSpider, Rule
 import re
-import scrapy
 import urlparse
 
 

@@ -2,10 +2,10 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
-from ifttt import loaders
-from ifttt.items import ChannelItem, ActionItem, EventItem, RecipeItem
+from ewescrapers import loaders
+from ewescrapers.items import ChannelItem, ActionItem, EventItem, RecipeItem
 from scrapy.item import Item
-import ifttt
+import ewescrapers
 import pickle
 import logging
 
@@ -151,7 +151,6 @@ class RemoveEmptyItemsPipeline(object):
     def _process_item(self, item):
         ''' Remove al not-populated items and nested item stored as fields '''
         
-        logger.debug("[RemoveEmptyItemsPipeline] Processing item:".format(item))
         # Because of recursiveness we may find args that are not items
         if not isinstance(item, Item): 
             return item
@@ -159,7 +158,6 @@ class RemoveEmptyItemsPipeline(object):
         # iterate over the fields
         ret = None
         for field, value in item.items():
-            logger.debug("[RemoveEmptyItemsPipeline] Found field {}:{}".format(field,value) )
             if isinstance(value, Item):
                 item[field] = self._process_item(item)  # Field items  re-assign
             elif isinstance(value, list):
@@ -186,7 +184,7 @@ class PopulateParameterIds(object):
 
     def process_item(self, item, spider):
         
-        if type(item) is ifttt.items.ChannelItem:
+        if type(item) is ewescrapers.items.ChannelItem:
             # Process channel
             for event in item.get('events_generated', []):
                 for param in event.get('input_parameters', []):

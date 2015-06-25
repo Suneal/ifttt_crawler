@@ -3,12 +3,10 @@ Created on Jun 21, 2015
 
 @author: miguel
 '''
-from ifttt import loaders
-from ifttt.items import ChannelItem, EventItem, ActionItem, InputParameterItem, \
+from ewescrapers import loaders
+from ewescrapers.items import ChannelItem, EventItem, ActionItem, InputParameterItem, \
     OutputParameterItem
-from ifttt.loaders import ChannelLoader, strip
 from scrapy.spiders.crawl import CrawlSpider
-from urlparse import urlparse
 import scrapy
 
 
@@ -46,8 +44,8 @@ class IftttChannelSpider(CrawlSpider):
                 self.logger.debug(u"ChannelTitle: {}".format(channel_title))
                 # Include the category in the request
                 channel = ChannelItem()
-                channel['category'] = strip(cat_title)
-                channel['title'] = strip(channel_title)
+                channel['category'] = loaders.strip(cat_title)
+                channel['title'] = loaders.strip(channel_title)
                 
                 self.logger.debug("Post Item")
                                 

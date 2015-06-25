@@ -3,7 +3,7 @@ Created on Sep 17, 2013
 
 @author: miguel
 '''
-from ifttt.items import RecipeItem
+from ewescrapers.items import RecipeItem
 from jinja2 import Environment, PackageLoader
 from os.path import dirname, abspath, splitext
 from scrapy import log
@@ -23,8 +23,8 @@ class JinjaExporterMultifile(BaseItemExporter):
     def __init__(self, file, **kwargs):
         # This should extract the name of the package automatically
         self.file = file
-        self.env = Environment(loader=PackageLoader('ifttt', 'templates'))
-        # self.env = Environment(loader=PackageLoader('ifttt', 'templates'), 
+        self.env = Environment(loader=PackageLoader('ewescrapers', 'templates'))
+        # self.env = Environment(loader=PackageLoader('ewescrapers', 'templates'), 
         #                        trim_blocks=True, 
         #                        lstrip_blocks=True)
         self.folder = dirname(abspath(file.name))
