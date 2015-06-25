@@ -5,3 +5,8 @@
 .pydevproject
 scraped_data
 id_datastore
+output
+*.rdf
+*.n3
+*.json
+*.csv

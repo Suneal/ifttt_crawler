@@ -5,8 +5,8 @@ Scrapy Item Loaders definition
 
 @author: miguel
 '''
-from scrapy.contrib.loader import XPathItemLoader
-from scrapy.contrib.loader.processor import MapCompose, TakeFirst, Join, \
+from scrapy.loader import ItemLoader
+from scrapy.loader.processors import MapCompose, TakeFirst, Join, \
     Identity
 import html2text as h2t
 import re
@@ -74,11 +74,12 @@ def erase_channel(s):
     return re.sub('\s+Channel$', '', s)  
 
 
-def contextualize(url):
+def contextualize(url, base_url="https://ifttt.com"):
     ''' This appends the base url at the begining of the url string.
         
         Args:
-            url(str):    The relative url
+            url(str):        The relative url
+            base_url(str):   The base url. By default it is: https://ifttt.com
         
         Return:
             The absolute url
@@ -86,13 +87,50 @@ def contextualize(url):
         >>> contextualize('people/JackSparow')
         'https://ifttt.com/people/JackSparow'
         
-        >>> contextialize('./channels/youtuve')
-        'https://ifttt.com/channels/youtuve'
-    '''    
-    return urlparse.urljoin("https://ifttt.com", url)
+        >>> contextialize('./channels/youtube')
+        'https://ifttt.com/channels/youtube'
+        
+        >>> contextialize('youtube', base_url="https://ifttt.com/')
+        'https://ifttt.com/youtube'
+    '''
+    return urlparse.urljoin(base_url, url)
+
+def generate_uri(text, base_url="https://ifttt.com", relative_path="", is_prop=False):
+    ''' This generates a valid URI for the text given.
+        
+        Args:
+            text(str):             The text to use
+            base_url(str):         The base url. By default it is: https://ifttt.com
+            relative_path(str):    Relative path to intercalate between the base path and the text
+            is_prop(bool):         Indicates if the url represents a property
+        
+        Return:
+            The absolute uri
+            
+        >>> generate_uri('my uri')
+        'https://ifttt.com/MyUri
+        
+        >>> generate_uri('my uri', relative_path='relative-uris/')
+        'https://ifttt.com/relative-uris/MyUri
+        
+        >>> generate_uri('my uri', relative_path='relative-uris/', is_prop=True)
+        'https://ifttt.com/relative-uris/myUri        
+        
+        And be careful with mising slash
+        
+        >>> generate_uri('my uri', relative_path='relative-uris')
+        'https://ifttt.com/relative-urisMyUri
+    '''
+    camel_text = ''.join(x for x in text.title() if not x.isspace())
+    if is_prop:
+        # when it is a prop, first letter should be lowercase
+        camel_text = camel_text[:1].lower() + camel_text[1:] if text else ''
+        
+    path = u"{rel}{text}".format(rel=relative_path, text=camel_text)
+    return urlparse.urljoin(base_url, path)
 
 
-class BaseEweLoader(XPathItemLoader):
+class BaseEweLoader(ItemLoader):
     ''' Base loader that strips all inputs and takes the first element 
         of the list as output.
     '''
@@ -102,7 +140,8 @@ class BaseEweLoader(XPathItemLoader):
 
 class RecipeLoader(BaseEweLoader):
     ''' RecipeItems loader. In addition to BaseEweLoader, it contextualizes 
-        user uris. '''
+        user uris. 
+    '''
     created_by_in = MapCompose(contextualize)
     
     
@@ -124,4 +163,3 @@ class EventActionLoader(BaseEweLoader):
     '''
     input_parameters_out = Identity()
     output_parameters_out = Identity()
-    

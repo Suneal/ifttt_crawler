@@ -2,10 +2,14 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
+from ifttt import loaders
 from ifttt.items import ChannelItem, ActionItem, EventItem, RecipeItem
-from scrapy import log
 from scrapy.item import Item
+import ifttt
 import pickle
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class IdRegistryPipeline(object):
@@ -60,7 +64,7 @@ class IdRegistryPipeline(object):
         if 'channel' in spider.name:
             self.id_ds = {}
         elif 'rule' in spider.name and not self.id_ds:
-            log.msg("No ids loaded", level=log.WARNING)
+            logger.warning("No ids loaded")
             
     
     def process_item(self, item, spider):
@@ -70,7 +74,7 @@ class IdRegistryPipeline(object):
             for field in self.REPLACE_FIELDS:
                 replacement = self.id_ds.get(item[field], None)
                 if replacement:
-                    log.msg("[IdRegistryPipeline] Field " + field + " replaced by:" + replacement, level=log.DEBUG)
+                    logger.debug("[IdRegistryPipeline] Field " + field + " replaced by:" + replacement)
                     item[field] = replacement
         else:
             self._register_item(item)
@@ -89,39 +93,37 @@ class IdRegistryPipeline(object):
 
     def _register_item(self, item):
         
-        log.msg("[IdRegistryPipeline] Register_item:" + str(item), level=log.DEBUG)
+        logger.debug("[IdRegistryPipeline] Register_item: {}".format(item))
         if type(item) in [ChannelItem, EventItem, ActionItem]:
             # Register new ids
             if not item['title']:
-                log.msg("[IdRegistryPipeline] The item consideren has no title field:" + str(item), level=log.WARNING)
+                logger.warning("[IdRegistryPipeline] The item consideren has no title field:" + str(item))
             elif type(item['title']) not in [str, unicode]:
-                log.msg("[IdRegistryPipeline] Type of title field is:" + str(type(item['title'])), level=log.WARNING)
+                logger.warning("[IdRegistryPipeline] Type of title field is:" + str(type(item['title'])))
             elif self.id_ds.get(item['title'], None):
-                log.msg("[IdRegistryPipeline] The Item <" + str(item['title']) + 
+                logger.warning("[IdRegistryPipeline] The Item <" + str(item['title']) + 
                         "> alreay exists on the data map. Current mapping is:" + 
-                        str(self.id_ds[item['title']]) + ". New proposal is " + str(item['id']),
-                        log.WARNING)
+                        str(self.id_ds[item['title']]) + ". New proposal is " + str(item['id']))
             else:
-                log.msg("[IdRegistryPipeline] The Item with title <" + str(item['title']) + 
-                        "> has been associated to the id:" + str(item['id']),
-                        level=log.DEBUG)
+                logger.debug("[IdRegistryPipeline] The Item with title <" + str(item['title']) + 
+                        "> has been associated to the id:" + str(item['id']))
                 self.id_ds[item['title']] = item['id']
             
             
         # Check for field with items as value
         # Here, we consider all items not only those with replacements
         if isinstance(item, Item):
-            log.msg("[IdRegistryPipeline] Fields:" + str(item.keys()), level=log.DEBUG)
+            logger.debug("[IdRegistryPipeline] Fields:{}".format(item.keys()))
             for field in item.keys():
                 val = item[field]
-                log.msg("[IdRegistryPipeline] Field: " + str(field) + ">>" + str(val), level=log.DEBUG)
+                logger.debug("[IdRegistryPipeline] Field: {} >> {}".format(field, val))
                 if isinstance(val, Item):
-                    log.msg("[IdRegistryPipeline] It is item:" + str(val))
+                    logger.debug("[IdRegistryPipeline] It is item:{}".format(val))
                     self._register_item(val)
                 elif isinstance(val, list):
-                    log.msg("[IdRegistryPipeline] It is a list:" + str(val), level=log.DEBUG)
+                    logger.debug("[IdRegistryPipeline] It is a list:{}".format(val))
                     for i in val:
-                        log.msg("List member: " + str(i), level=log.DEBUG)
+                        logger.debug("List member: {}".format(i))
                         self._register_item(i)
                     
 
@@ -141,7 +143,7 @@ class RemoveEmptyItemsPipeline(object):
         processing those items that will be removed.
     '''    
     def __init__(self):
-        log.msg("[RemoveEmptyItemsPipeline] Initialize...", level=log.DEBUG)
+        logger.debug("[RemoveEmptyItemsPipeline] Initialize...")
 
     def process_item(self, item, spider):
         return self._process_item(item)
@@ -149,7 +151,7 @@ class RemoveEmptyItemsPipeline(object):
     def _process_item(self, item):
         ''' Remove al not-populated items and nested item stored as fields '''
         
-        log.msg("[RemoveEmptyItemsPipeline] Processing item:" + str(item), level=log.DEBUG)
+        logger.debug("[RemoveEmptyItemsPipeline] Processing item:".format(item))
         # Because of recursiveness we may find args that are not items
         if not isinstance(item, Item): 
             return item
@@ -157,7 +159,7 @@ class RemoveEmptyItemsPipeline(object):
         # iterate over the fields
         ret = None
         for field, value in item.items():
-            log.msg("[RemoveEmptyItemsPipeline] Found field " + str(field) + ":" + repr(value) , level=log.DEBUG)
+            logger.debug("[RemoveEmptyItemsPipeline] Found field {}:{}".format(field,value) )
             if isinstance(value, Item):
                 item[field] = self._process_item(item)  # Field items  re-assign
             elif isinstance(value, list):
@@ -166,7 +168,39 @@ class RemoveEmptyItemsPipeline(object):
                 ret = item
                 
         if not ret:
-            log.msg("[RemoveEmptyItemsPipeline] Removed empty item", level=log.DEBUG)
+            logger.debug("[RemoveEmptyItemsPipeline] Removed empty item")
             
         return ret
 
+
+class PopulateParameterIds(object):
+    ''' This pipeline, for each channel scrapeed, iterates over its events and 
+        actions, and then over their params. No channel objects are skipped. 
+        
+        For each of those params it adds the id field, constructed from the 
+        title. To do so, it uses a function that always generates the same URI
+        given a title.
+    '''    
+    def __init__(self):
+        logger.debug("[PopulateParameterIds] Initialize...")
+
+    def process_item(self, item, spider):
+        
+        if type(item) is ifttt.items.ChannelItem:
+            # Process channel
+            for event in item.get('events_generated', []):
+                for param in event.get('input_parameters', []):
+                    if 'title' in param:
+                        param['id'] = self._generate_uri(param['title'])
+                for param in event.get('output_parameters', []):
+                    if 'title' in param:
+                        param['id'] = self._generate_uri(param['title'])
+            for action in item.get('actions_provided', []):
+                for param in action.get('input_parameters', []):
+                    if 'title' in param:
+                        param['id'] = self._generate_uri(param['title'])
+        return item
+    
+    def _generate_uri(self, title):
+        """ Auxiliar method called to generate the uris """
+        return loaders.generate_uri(title, relative_path="properties/", is_prop=True)

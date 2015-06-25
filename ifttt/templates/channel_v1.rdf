@@ -10,18 +10,24 @@
 	xmlns:dcterms="http://purl.org/dc/terms/" 
 	xmlns:tags="http://www.holygoat.co.uk/owl/redwood/0.1/tags/" 
 	xmlns="http://gsi.dit.upm.es/ontologies/ewe/ns/">
-	
+
+  <!-- Channel definition -->
+  <!-- * Punning mechanism is used to define this class. It is acts a an 
+  individual as well, thus it can have properties as any other individual -->
   <owl:Class rdf:about="{{ item['id'] }}">
-    <rdfs:SubClassOf rdf:resource="http://gsi.dit.upm.es/ontologies/ewe/ns/Channel"/>{% if item['title'] %}
+    <rdfs:SubClassOf rdf:resource="http://gsi.dit.upm.es/ontologies/ewe/ns/Channel"/>
+    <rdf:type rdf:resource="http://gsi.dit.upm.es/ontologies/ewe/ns/Channel"/>{% if item['title'] %}
     <dcterms:title>{{ item['title'] }}</dcterms:title>{% endif %}{% if item['description'] %}
-    <dcterms:description>{{ item['description'] }}</dcterms:description>{% endif %}{% if item['commercial_url'] %}
+    <dcterms:description>{{ item['description'] }}</dcterms:description>{% endif %}{% if item['category'] %}
+    <ewe:hasCategory>{{ item['category'] }}</ewe:hasCategory>{% endif %}{% if item['commercial_url'] %}
     <foaf:url>{{ item['commercial_url'] }}</foaf:url>{% endif %}{% if item['logo'] %}
-    <foaf:logo>{{ item['logo'] }}</foaf:logo>{% endif %}< 
+    <foaf:logo>{{ item['logo'] }}</foaf:logo>{% endif %} 
     <!-- Event and action references -->{% for event in item['events_generated'] %}
     <ewe:generatesEvent rdf:resource="{{event['id']}}" />{% endfor %}{% for action in item['actions_provided'] %}    
     <ewe:hasAction rdf:resource="{{action['id']}}" />{% endfor %}
   </owl:Class>
 
+  <!-- Associated Events definition -->
   {% for event in item['events_generated'] %}
   <owl:Class rdf:about="{{ event['id'] }}">
     <rdfs:SubClassOf rdf:resource="http://gsi.dit.upm.es/ontologies/ewe/ns/Event"/> {% if event['title'] %}
@@ -42,10 +48,10 @@
         <dcterms:description>{{ iparam['description'] }}</dcterms:description> {% endif %}{% if iparam['type'] %}
         <xsd:type>{{ iparam['type'] }}</xsdt:type> {% endif %}
       </owl:Class>
-    </ewe:hasInputParameter>
-    {% endfor %}
-  </owl:Class>{% endfor %}
-  
+    </ewe:hasInputParameter>{% endfor %}
+  </owl:Class>
+  {% endfor %}
+  <!-- Associated Actions definition -->
   {% for action in item['actions_provided'] %}
   <owl:Class rdf:about="{{ action['id'] }}">
     <rdfs:SubClassOf rdf:resource="http://gsi.dit.upm.es/ontologies/ewe/ns/Action"/> {% if action['title'] %}
@@ -66,8 +72,7 @@
         <dcterms:description>{{ iparam['description'] }}</dcterms:description>{% endif %}{% if iparam['type'] %}
         <xsd:type>{{ iparam['type'] }}</xsdt:type>{% endif %}
       </owl:Class>
-    </ewe:hasInputParameter>
-    {% endfor %}
+    </ewe:hasInputParameter>{% endfor %}
   </owl:Class>
   {% endfor %}
 

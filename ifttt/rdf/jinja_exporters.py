@@ -3,17 +3,17 @@ Created on Sep 17, 2013
 
 @author: miguel
 '''
-from urlparse import urlparse
+from ifttt.items import RecipeItem
+from jinja2 import Environment, PackageLoader
 from os.path import dirname, abspath, splitext
+from scrapy import log
+from scrapy.contrib.exporter import BaseItemExporter
+from urlparse import urlparse
 import os
 import re
 
-from scrapy import log
-from scrapy.contrib.exporter import BaseItemExporter
-
-from ifttt.items import RecipeItem
-from jinja2 import Environment, PackageLoader
-
+import logging
+logger = logging.getLogger(__name__)
 
 class JinjaExporterMultifile(BaseItemExporter):
     ''' 
@@ -24,6 +24,9 @@ class JinjaExporterMultifile(BaseItemExporter):
         # This should extract the name of the package automatically
         self.file = file
         self.env = Environment(loader=PackageLoader('ifttt', 'templates'))
+        # self.env = Environment(loader=PackageLoader('ifttt', 'templates'), 
+        #                        trim_blocks=True, 
+        #                        lstrip_blocks=True)
         self.folder = dirname(abspath(file.name))
         self.extension = splitext(file.name)[1]
 
@@ -35,17 +38,22 @@ class JinjaExporterMultifile(BaseItemExporter):
             Args:
                 item(Item):    The item scraped            
         '''
-        log.msg("[JinjaExporter] Exporting item " + str(item), level=log.DEBUG)
+        logger.debug("[JinjaExporter] Exporting item " + str(item))
+        
+        # manage utf-8
+        import sys
+        reload(sys)
+        sys.setdefaultencoding('utf-8')
         
         if not item.template:
-            log.msg("No template attribute for item:" + str(item), level=log.WARNING)
+            logger.warning("No template attribute for item:" + str(item))
             return
         
         # Generate item representation
-        template = self.env.get_template(item.template + '.rdf')
-        log.msg("[JinjaExporter] Template loaded", level=log.DEBUG)        
+        template = self.env.get_template('{}{}'.format(item.template, self.extension))
+        logger.debug("[JinjaExporter] Template loaded")        
         out = template.render(item=item)
-        log.msg("[JinjaExporter] Template rendered", level=log.DEBUG)
+        logger.debug("[JinjaExporter] Template rendered")
         
         # Save to file
         # fpath = os.path.join(os.path.abspath(self.file), self.get_valid_name(item))

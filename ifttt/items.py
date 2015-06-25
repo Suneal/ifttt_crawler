@@ -11,9 +11,7 @@ class RecipeItem(Item):
         All fields included can be populated using information scrapped
         from ifttt's website. 
     '''
-    ewe_class = 'Rule'
     template = 'rule'
-    
     # Fields    
     id = Field()
     title = Field()
@@ -29,37 +27,22 @@ class RecipeItem(Item):
     supported_by = Field()
     
     def __str__(self, *args, **kwargs):
-        return str(self.get('title', ''))
+        return str(self.get('title', 'NoTitle'))
 
 class ChannelItem(Item):
     ''' Class that represents a Channel according to Ifttt definition.
         All fields included can be populated using information scrapped
         from ifttt's website. 
     '''
-    ewe_class = 'ewe:Channel' 
     template = 'channel'
-    
     # Fields    
     id = Field()  # Not a number a unique string
-    
-    title_label = 'dcterms:title'
     title = Field()
-    
-    description_label = 'dcterms:description'    
     description = Field()
-    
-    commercial_url_label = 'foaf:url'
     commercial_url = Field()
-    
-    logo_label = 'foaf:logo'
     logo = Field()
-    
-    events_generated_label = 'ewe:generatesEvent'
-    events_generated_asAttr = True
+    category = Field()
     events_generated = Field()
-    
-    actions_provided_label = 'ewe:hasAction'
-    actions_provided_asAttr = True
     actions_provided = Field()
 
     def __str__(self, *args, **kwargs):
@@ -68,23 +51,13 @@ class ChannelItem(Item):
 class EventItem(Item):
     '''
     '''
-    ewe_class = 'ewe:Event' 
-    
     # Fields
+    template = 'event'
     id = Field()
-    
-    title_label = 'dcterms:title'
     title = Field()
-    
-    description_label = 'dcterms:description'
     description = Field()
-    
-    input_parameters_label = 'ewe:hasInputParameter'
-    input_parameters_asAttr = True
+    see_also = Field()
     input_parameters = Field()
-    
-    output_parameters_label = 'ewe:hasOutputParameter'
-    output_parameters_asAttr = True
     output_parameters = Field()
     
     def __str__(self, *args, **kwargs):
@@ -93,19 +66,12 @@ class EventItem(Item):
 class ActionItem(Item):
     '''
     '''
-    ewe_class = 'ewe:Action'    
-    
     # Fields
+    template = 'action'
     id = Field()
-    
-    title_label = 'dcterms:title'
     title = Field()
-    
-    description_label = 'dcterms:description'
     description = Field()
-    
-    input_parameters_label = 'ewe:hasInputParameter'
-    input_parameters_asAttr = True
+    see_also = Field()
     input_parameters = Field()
     
     def __str__(self, *args, **kwargs):
@@ -114,17 +80,12 @@ class ActionItem(Item):
 class InputParameterItem(Item):
     '''
     '''
-    ewe_class = 'ewe:InputParameter' 
-    
     # Fields
-    title_label = 'dcterms:title'
+    id = Field()
     title = Field()
-    
-    description_label = 'dcterms:description'
     description = Field()
-    
-    type_label = 'xsd:type'
     type = Field()
+    see_also = Field()
     
     def __str__(self, *args, **kwargs):
         return str(self.get('title', ''))
@@ -132,17 +93,12 @@ class InputParameterItem(Item):
 class OutputParameterItem(Item):
     '''
     '''
-    ewe_class = 'ewe:OutputParameter' 
-    
     # Fields
-    title_label = 'dcterms:title'
+    id = Field()
     title = Field()
-    
-    description_label = 'dcterms:description'
     description = Field()  # Name + Notes
-    
-    example_label = 'ewe:example'
     example = Field()
+    see_also = Field()
 
     def __str__(self, *args, **kwargs):
         return str(self.get('title', ''))
