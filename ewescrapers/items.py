@@ -23,6 +23,7 @@ class RecipeItem(Item):
     action_channel = Field()
     created_by = Field()
     times_used = Field()
+    times_favorite = Field()
     created_at = Field()
     supported_by = Field()
     

@@ -4,19 +4,153 @@ Created on Sep 17, 2013
 @author: miguel
 '''
 from ewescrapers import loaders
-from ewescrapers.items import RecipeItem, ChannelItem, EventItem, InputParameterItem, \
-    OutputParameterItem, ActionItem
+from ewescrapers.items import RecipeItem, ChannelItem, EventItem, \
+    InputParameterItem, OutputParameterItem, ActionItem
 from ewescrapers.loaders import RecipeLoader, ChannelLoader, EventActionLoader, \
     BaseEweLoader
 from scrapy.http.request import Request
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
+import re
+import scrapy
 import urlparse
     
+class IftttLogin(CrawlSpider):
+    ''' '''
+    name = 'ifttt_rules'
+    start_urls = ['https://ifttt.com/login']
+    recipes_url = 'https://ifttt.com/recipes'    
+    
+#     rules = (Rule (LinkExtractor(allow=("https://ifttt.com/recipes", "recipes/[-a-zA-Z0-9_]+$", "recipes?page=",)),
+#                    callback="parse_recipe", follow= True),
+#     )
+    
+    def __init__(self, username=None, password=None, max_page=2, *args, **kwargs):
+        """ Read arguments """
+        super(IftttLogin, self).__init__(*args, **kwargs)
+        self.ifttt_username = username
+        self.ifttt_password = password                
+        self.max_page = max_page
+
+    def parse(self, response):
+        """ Get authenticity token and perform login """
+        if self.ifttt_username is None or self.ifttt_password is None:
+            self.logger.info("No credentials provided. Carry on without loggin in...")
+            return self._iterate_over_pages()
+            #return Request(self.recipes_url, callback=self.parse_rule)
+        else:
+            self.logger.info("Loging in into Ifttt...")
+        
+        at = response.css('[name="authenticity_token"]').xpath('@value').extract_first()
+        self.logger.debug(u'Authenticity token {}'.format(at))
+                
+        return scrapy.FormRequest.from_response(
+            response,
+            formdata={'login': self.ifttt_username, 'password': self.ifttt_password, 'remember_me':'1', 'commit':'Sign in', 'authenticity_token':at},
+            callback=self._after_login
+        )
+        
+    def _after_login(self, response):
+        ''' Check if login whent right and trigger'''
+        if 'Sign in' in response.body:
+            self.logger.warning("Login process failed")            
+        else:
+            self.logger.info("Login process succeeded!")
+            
+            csrf_token = response.xpath('//meta[@name="csrf-token"]/@content').extract_first()
+            self.logger.debug("csrf_token = {}".format(csrf_token))
+            
+            n = 2
+            return Request('https://ifttt.com/recipes?page={}'.format(n), callback=self._find_links, meta={'page':n}, headers={'X-CSRF-Token':csrf_token})
+        
+#             for n in range(self.max_page):
+#                 self.logger.info("Receipt page number {}".format(n))
+#                 yield Request('https://ifttt.com/recipes?page={}'.format(n), callback=self._find_links, meta={'page':n}, headers={'X-CSRF-Token':csrf_token})
+        
+            
+            
+#             return Request(self.recipes_url, callback=self._iterate_over_pages)
+#             return self._iterate_over_pages()
+ 
+#         yield Request('https://ifttt.com/recipes/51161-save-your-status-updates-on-facebook-to-an-evernote-notebook', callback=self.parse_rule)
+#         yield Request('https://ifttt.com/recipes/41536-tagged-in-a-photo-on-facebook-save-it-to-your-own-album', callback=self.parse_rule)
+#         yield Request('https://ifttt.com/recipes/1828-help-me-find-my-lost-phone', callback=self.parse_rule)
+        
+#         return Request(self.recipes_url, callback=self._iterate_over_pages)
+    
+    
+    def _iterate_over_pages(self, response):
+        ''' '''
+        csrf_token = response.xpath('//meta[@name="csrf-token"]/@content').extract_first()
+        
+        for n in range(self.max_page):
+            self.logger.info("Receipt page number {}".format(n))
+            yield Request('https://ifttt.com/recipes?page={}'.format(n), callback=self._find_links, meta={'page':n}, headers={'X-CSRF-Token':csrf_token})
+    
+    def _find_links(self, response):
+        ''' '''
+        slug_re = re.compile("recipes/[0-9][-a-zA-Z0-9_]+$")
+        n = response.meta['page']
+        for link in response.xpath('//a/@href').extract():
+            if slug_re.search(link):
+                url = urlparse.urljoin("https://ifttt.com", link)   
+                self.logger.debug( 'match {} {}'.format(url, n) )                
+                yield Request(url, callback=self.parse_rule)
+                
+        csrf_token = response.xpath('//meta[@name="csrf-token"]/@content').extract_first()
+        self.logger.debug("csrf_token = {}".format(csrf_token))
+        
+        n = n + 1
+        if n <= self.max_page:
+            yield Request('https://ifttt.com/recipes?page={}'.format(n), callback=self._find_links, meta={'page':n}, headers={'X-CSRF-Token':csrf_token})            
+
+        
+    def parse_rule(self, response):
+        ''' This function parses a recipe page. 
+            Some contracts are mingled with this docstring.
+        
+            @url https://ifttt.com/recipes/117260
+            @returns items 1
+            @returns requests 0
+            @scrapes url id title description event_channel event action_channel action created_by created_at times_used
+        '''
+        loader = RecipeLoader(item=RecipeItem(), response=response)
+        loader.add_value('supported_by', 'https://ifttt.com/')
+        loader.add_value('url', response.url)
+        loader.add_value('id', response.url)
+        loader.add_xpath('title', '//h1/span[@itemprop="name"]/text()')
+        loader.add_xpath('description', '//span[@itemprop="description"]/text()')
+        loader.add_xpath('event_channel', '//span[@class="recipe_trigger"]/@title')
+        event = response.css('#live_trigger_fields_complete h4').xpath('text()').extract_first()
+        loader.add_value('event', event)
+        loader.add_xpath('action_channel', '//span[@class="recipe_action"]/@title')
+        action = response.css('#live_action_fields_complete h4').xpath('text()').extract_first()
+        loader.add_value('action', action)
+        loader.add_xpath('created_by', '//span[@itemprop="author"]/a/@href')
+        loader.add_xpath('created_at', '//span[@itemprop="datePublished"]/@datetime')
+        loader.add_xpath('times_used', '//span[@class="stats_item__use-count__number"]/text()')
+        loader.add_xpath('times_favorite', '//span[@class="stats_item__favorites-count__number"]/text()')
+        return loader.load_item()
+        
+        
+#         trigger = response.css('.recipe_trigger .recipe_component-icon').xpath('@href').extract_first()
+#         self.logger.debug(u"Trigger {}".format(trigger))
+#         action = response.css('.recipe_action .recipe_component-icon').xpath('@href').extract_first()
+#         self.logger.debug(u"Action {}".format(action))
+        
+#         tgs = response.css('.trigger_fields h4').xpath('text()').extract_first()
+#         self.logger.debug(u"Triggers+ {}".format(tgs))
+#         tgs = response.css('#live_trigger_fields_complete h4').xpath('text()').extract_first()
+#         self.logger.debug(u"O bien Triggers+ {}".format(tgs))
+#         
+#         acs = response.css('#live_action_fields_complete h4').xpath('text()').extract_first() 
+#         self.logger.debug(u"Actions {}".format(acs))
+
+
 
 class IftttRuleSpider(CrawlSpider):
     ''' '''
-    name = 'ifttt_rules'
+    name = 'ifttt_rules_old'
     allowed_domains = ["ifttt.com"]
     start_urls = [ "https://ifttt.com/recipes"]
 
@@ -42,21 +176,62 @@ class IftttRuleSpider(CrawlSpider):
         loader.add_xpath('title', '//h1/span[@itemprop="name"]/text()')
         loader.add_xpath('description', '//span[@itemprop="description"]/text()')
         loader.add_xpath('event_channel', '//span[@class="recipe_trigger"]/@title')
-        loader.add_xpath('event', '//span[@class="recipe_trigger"]/span/text()')
+        loader.add_xpath('event', '//span[@class="recipe_trigger"]/span/text()') # fails
         loader.add_xpath('action_channel', '//span[@class="recipe_action"]/@title')
-        loader.add_xpath('action', '//span[@class="recipe_action"]/span/text()')
+        loader.add_xpath('action', '//span[@class="recipe_action"]/span/text()') # fails
         loader.add_xpath('created_by', '//span[@itemprop="author"]/a/@href')
         loader.add_xpath('created_at', '//span[@itemprop="datePublished"]/@datetime')
-        loader.add_xpath('times_used', '//div[3]/div[2]/div[1]/div[3]/text()', re="(\d+)")  
+        loader.add_xpath('times_used', '//span[@class="stats_item__use-count__number"]/text()')
+        loader.add_xpath('times_favourite', '//span[@class="stats_item__favorites-count__number"]/text()')
         return loader.load_item()
 
 
 class IftttChannelSpider(CrawlSpider):
-    ''' '''
+    ''' This spider crawls ifttt and extracts all information of all channels 
+        linked in the channel index page (/channels).
+        
+        This spider requires no authentication.
+        
+        This is a complex crawler that extracts information from different pages:
+        
+        * First, from channels-index-page (/channels) the links of the 
+          channel pages as well as the category of each of them is extracted.
+        * Second, from the channel page, the rest of the information about the 
+          channel is extracted, and also, the links to the relted triggers and 
+          actions.           
+        * Finally the trigger and action pages are scraped and the information 
+          from events and actions is appended to the channel. 
+          
+        Each request is completing the information from the channel, thus all 
+        of them need to be performed in sequence to compile all the information.
+        
+        From the channel-index-page, the category is passed to the channel-page 
+        requests. Then, all trigger/action requests are constructed. In this 
+        case, they are organized as a sequence, and the requests are, one by 
+        one, completing the information of the channel.
+        
+        The sequence of requests is handled as follows:
+        
+        1. First, it is constructed by the `parse_channel` method using the 
+           links to triggers and actions from the action page. The requests 
+           are appended to a list. The callback is conveniently assigned: 
+           `parse_event` for trigger links, and `parse_action` to action 
+           links.
+        2. Secondly, the first request is popped from the list. The rest of the 
+           list is passed as metadata to this request, as well as the channel 
+           (particularly, the `loader` object used). That request is returned
+           to be processed by scrapy.
+        3. Then, the callback method is called once the data is scraped from 
+           the requested url. This, constructs a Event/Action item that is 
+           given to the channel loader (from the meta). The next request is 
+           popped from the list, and steps 2 and 3 are repeated until the 
+           sequence is empty. Helper method `_dispatch_request` is in charge of
+           handling the sequences.
+    '''
     name = 'ifttt_channels'
     allowed_domains = ["ifttt.com"]
-    start_urls = [ "https://ifttt.com/channels/",
-                   ]
+    start_urls = [ "https://ifttt.com/channels/" ]
+    
     # def parse(self, response):
     #     request = Request('https://ifttt.com/sms', callback=self.parse_channel)
     #     request.meta['category'] = 'categoria'

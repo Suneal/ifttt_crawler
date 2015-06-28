@@ -6,8 +6,7 @@ Created on Sep 17, 2013
 from ewescrapers.items import RecipeItem
 from jinja2 import Environment, PackageLoader
 from os.path import dirname, abspath, splitext
-from scrapy import log
-from scrapy.contrib.exporter import BaseItemExporter
+from scrapy.exporters import BaseItemExporter
 from urlparse import urlparse
 import os
 import re

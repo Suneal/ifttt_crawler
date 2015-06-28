@@ -13,6 +13,11 @@ NEWSPIDER_MODULE = 'ewescrapers.spiders'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 # USER_AGENT = 'ewescrapers (+http://www.yourdomain.com)'
+USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.125 Safari/537.36'
+
+# Required for Ifttt pagination
+COOKIES_ENABLED = True
+COOKIES_DEBUG = True
 
 ITEM_PIPELINES = {
      'ewescrapers.pipelines.RemoveEmptyItemsPipeline' : 900,
