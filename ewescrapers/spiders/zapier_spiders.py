@@ -4,7 +4,7 @@ Created on Jun 21, 2015
 @author: miguel
 '''
 from ewescrapers import loaders
-from ewescrapers.items import ChannelItem, EventItem
+from ewescrapers.items import ChannelItem, EventItem, ActionItem
 from scrapy.spiders.crawl import CrawlSpider
 import scrapy
 
@@ -68,7 +68,7 @@ class ZapierChannelSpider(CrawlSpider):
         action_divs = actions_sel.xpath('div/text()').extract()
         # take the divs in pairs
         for title, description in zip(*[action_divs[x::2] for x in (0, 1)]):
-            action = EventItem()
+            action = ActionItem()
             action['id'] = loaders.generate_uri(title, base_url=response.url, relative_path="actions/")
             action['title'] = title
             action['description'] = description
@@ -76,3 +76,12 @@ class ZapierChannelSpider(CrawlSpider):
             
         return channel
         
+        
+# class ZapierRuleSpider(CrawlSpider):
+#     ''' '''
+#     name = 'zapier_rules'
+#     allowed_domains = ['zapier.com']
+#     start_urls = ['https://zapier.com/app/explore']
+# 
+#     
+#     def parse(self, response):

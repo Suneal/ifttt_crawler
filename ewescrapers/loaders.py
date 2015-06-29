@@ -68,8 +68,8 @@ def handle_ks(s):
         >>> handle_ks('62k')
         62000
     '''
-    if s.find('k'):
-        return str(int(float(s.replace('k',''))*1000))
+    if s.find('k') != -1:
+        return str(int(float(s.replace('k',''))*1000))        
     else:
         return s
 
@@ -163,8 +163,8 @@ class RecipeLoader(BaseEweLoader):
         user uris. 
     '''
     created_by_in = MapCompose(contextualize)
-    times_favorite = TakeFirst(strip, handle_ks)    
-    times_used = TakeFirst(strip, handle_ks)
+    times_favorite_in = MapCompose(strip, handle_ks)    
+    times_used_in = MapCompose(strip, handle_ks)
     
 class ChannelLoader(BaseEweLoader):
     ''' ChannelItems loader. In addition to BaseEweLoader it formats the 

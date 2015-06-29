@@ -33,6 +33,6 @@ FEED_EXPORTERS = {
     # 'rdf2' : 'ewescrapers.rdf.exporter.RdfExporter',
     'json': 'scrapy.exporters.JsonItemExporter',
     'jsonlines': 'scrapy.exporters.JsonLinesItemExporter',
-    'csv': 'scrapy.exporters.CsvItemExporter',
+    'csv': 'ewescrapers.rdf.csv_exporter.CsvExporter',
     'xml': 'scrapy.exporters.XmlItemExporter',
 }
