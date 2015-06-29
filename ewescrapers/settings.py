@@ -17,7 +17,7 @@ USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Ge
 
 # Required for Ifttt pagination
 COOKIES_ENABLED = True
-COOKIES_DEBUG = True
+COOKIES_DEBUG = False
 
 ITEM_PIPELINES = {
      'ewescrapers.pipelines.RemoveEmptyItemsPipeline' : 900,

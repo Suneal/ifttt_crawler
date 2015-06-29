@@ -9,101 +9,67 @@ from ewescrapers.items import RecipeItem, ChannelItem, EventItem, \
 from ewescrapers.loaders import RecipeLoader, ChannelLoader, EventActionLoader, \
     BaseEweLoader
 from scrapy.http.request import Request
-from scrapy.linkextractors import LinkExtractor
-from scrapy.spiders import CrawlSpider, Rule
+from scrapy.spiders import CrawlSpider
 import re
 import scrapy
 import urlparse
-    
-class IftttLogin(CrawlSpider):
-    ''' '''
+
+class IftttRulesSpider(CrawlSpider):
+    ''' This spider scrapes ifttt recipe pages to extract the rules.
+        
+        The strategy followed consist on getting the recpies by id. 
+        The url of the recipe consist on an id and a slug, however giving the 
+        id, the server redirects to the correct recipe url is that exists.
+        Thus, the spider hit all recipe ids and scrapes those that exist.
+        
+        This spider requires authentication since a the information provided 
+        by the recipes is different wheter the user is logged in or not. 
+        
+        The crawling sequence is as follows:
+        
+        1. Hit the login page (/login) and perform a login using a `FormRequest`. 
+           That includes the "authenticity_token".
+        2. If login process fails, the process is over. We know it failed if it 
+           redirects to the login page again.
+        3. If the login process suceeded the recipe urls are scraped one by one, 
+           using its simple pattern /recipes/<count>. In those cases the recipe 
+           exist, the response will redirect to the url of the recipe.
+        4. Once the url of each recipe is reached, the rule is scraped
+        
+    '''
     name = 'ifttt_rules'
     start_urls = ['https://ifttt.com/login']
-    recipes_url = 'https://ifttt.com/recipes'    
     
-#     rules = (Rule (LinkExtractor(allow=("https://ifttt.com/recipes", "recipes/[-a-zA-Z0-9_]+$", "recipes?page=",)),
-#                    callback="parse_recipe", follow= True),
-#     )
-    
-    def __init__(self, username=None, password=None, max_page=2, *args, **kwargs):
+    def __init__(self, username=None, password=None, num_rules=80, *args, **kwargs):
         """ Read arguments """
-        super(IftttLogin, self).__init__(*args, **kwargs)
+        super(IftttRulesSpider, self).__init__(*args, **kwargs)
         self.ifttt_username = username
-        self.ifttt_password = password                
-        self.max_page = max_page
+        self.ifttt_password = password 
+        self.num_rules = num_rules
 
     def parse(self, response):
         """ Get authenticity token and perform login """
         if self.ifttt_username is None or self.ifttt_password is None:
             self.logger.info("No credentials provided. Carry on without loggin in...")
-            return self._iterate_over_pages()
             #return Request(self.recipes_url, callback=self.parse_rule)
         else:
             self.logger.info("Loging in into Ifttt...")
-        
+
+        # Authenticity token        
         at = response.css('[name="authenticity_token"]').xpath('@value').extract_first()
         self.logger.debug(u'Authenticity token {}'.format(at))
-                
+        # LoginForm Request
         return scrapy.FormRequest.from_response(
             response,
             formdata={'login': self.ifttt_username, 'password': self.ifttt_password, 'remember_me':'1', 'commit':'Sign in', 'authenticity_token':at},
             callback=self._after_login
         )
-        
+    
     def _after_login(self, response):
-        ''' Check if login whent right and trigger'''
-        if 'Sign in' in response.body:
-            self.logger.warning("Login process failed")            
-        else:
-            self.logger.info("Login process succeeded!")
-            
-            csrf_token = response.xpath('//meta[@name="csrf-token"]/@content').extract_first()
-            self.logger.debug("csrf_token = {}".format(csrf_token))
-            
-            n = 2
-            return Request('https://ifttt.com/recipes?page={}'.format(n), callback=self._find_links, meta={'page':n}, headers={'X-CSRF-Token':csrf_token})
+        ''' Hit the recipe urls by id '''
+        for n in range(self.num_rules):
+            yield Request("https://ifttt.com/recipes/{}".format(n), callback=self.parse_rule)
         
-#             for n in range(self.max_page):
-#                 self.logger.info("Receipt page number {}".format(n))
-#                 yield Request('https://ifttt.com/recipes?page={}'.format(n), callback=self._find_links, meta={'page':n}, headers={'X-CSRF-Token':csrf_token})
-        
-            
-            
-#             return Request(self.recipes_url, callback=self._iterate_over_pages)
-#             return self._iterate_over_pages()
- 
-#         yield Request('https://ifttt.com/recipes/51161-save-your-status-updates-on-facebook-to-an-evernote-notebook', callback=self.parse_rule)
-#         yield Request('https://ifttt.com/recipes/41536-tagged-in-a-photo-on-facebook-save-it-to-your-own-album', callback=self.parse_rule)
-#         yield Request('https://ifttt.com/recipes/1828-help-me-find-my-lost-phone', callback=self.parse_rule)
-        
-#         return Request(self.recipes_url, callback=self._iterate_over_pages)
-    
-    
-    def _iterate_over_pages(self, response):
-        ''' '''
-        csrf_token = response.xpath('//meta[@name="csrf-token"]/@content').extract_first()
-        
-        for n in range(self.max_page):
-            self.logger.info("Receipt page number {}".format(n))
-            yield Request('https://ifttt.com/recipes?page={}'.format(n), callback=self._find_links, meta={'page':n}, headers={'X-CSRF-Token':csrf_token})
-    
-    def _find_links(self, response):
-        ''' '''
-        slug_re = re.compile("recipes/[0-9][-a-zA-Z0-9_]+$")
-        n = response.meta['page']
-        for link in response.xpath('//a/@href').extract():
-            if slug_re.search(link):
-                url = urlparse.urljoin("https://ifttt.com", link)   
-                self.logger.debug( 'match {} {}'.format(url, n) )                
-                yield Request(url, callback=self.parse_rule)
-                
-        csrf_token = response.xpath('//meta[@name="csrf-token"]/@content').extract_first()
-        self.logger.debug("csrf_token = {}".format(csrf_token))
-        
-        n = n + 1
-        if n <= self.max_page:
-            yield Request('https://ifttt.com/recipes?page={}'.format(n), callback=self._find_links, meta={'page':n}, headers={'X-CSRF-Token':csrf_token})            
-
         
     def parse_rule(self, response):
         ''' This function parses a recipe page. 
@@ -131,36 +97,82 @@ class IftttLogin(CrawlSpider):
         loader.add_xpath('times_used', '//span[@class="stats_item__use-count__number"]/text()')
         loader.add_xpath('times_favorite', '//span[@class="stats_item__favorites-count__number"]/text()')
         return loader.load_item()
-        
-        
-#         trigger = response.css('.recipe_trigger .recipe_component-icon').xpath('@href').extract_first()
-#         self.logger.debug(u"Trigger {}".format(trigger))
-#         action = response.css('.recipe_action .recipe_component-icon').xpath('@href').extract_first()
-#         self.logger.debug(u"Action {}".format(action))
-        
-#         tgs = response.css('.trigger_fields h4').xpath('text()').extract_first()
-#         self.logger.debug(u"Triggers+ {}".format(tgs))
-#         tgs = response.css('#live_trigger_fields_complete h4').xpath('text()').extract_first()
-#         self.logger.debug(u"O bien Triggers+ {}".format(tgs))
-#         
-#         acs = response.css('#live_action_fields_complete h4').xpath('text()').extract_first() 
-#         self.logger.debug(u"Actions {}".format(acs))
-
-
-
-class IftttRuleSpider(CrawlSpider):
-    ''' '''
-    name = 'ifttt_rules_old'
-    allowed_domains = ["ifttt.com"]
-    start_urls = [ "https://ifttt.com/recipes"]
-
-    rules = (Rule(LinkExtractor(allow=("recipes/\d+$", "recipes?page=")),
-                                # allow=("recipes/118306", "recipes/113399", "recipes/118276", "recipes/115934")),
-                    callback="parse_recipe",
-                    follow=False),
-    )
     
-    def parse_recipe(self, response):
+    
+class IftttPagesSpider(CrawlSpider):
+    ''' '''
+    name = 'ifttt_rule_pages'
+    start_urls = ['https://ifttt.com/login']
+    recipes_url = 'https://ifttt.com/recipes'    
+    
+
+    def __init__(self, username=None, password=None, max_page=3, *args, **kwargs):
+        """ Read arguments """
+        super(IftttPagesSpider, self).__init__(*args, **kwargs)
+        self.ifttt_username = username
+        self.ifttt_password = password                
+        self.max_page = max_page
+
+    def parse(self, response):
+        """ Get authenticity token and perform login """
+        if self.ifttt_username is None or self.ifttt_password is None:
+            self.logger.info("No credentials provided. Carry on without loggin in...")
+            return self._iterate_over_pages()
+        else:
+            self.logger.info("Loging in into Ifttt...")
+        
+        at = response.css('[name="authenticity_token"]').xpath('@value').extract_first()
+        self.logger.debug(u'Authenticity token {}'.format(at))
+                
+        return scrapy.FormRequest.from_response(
+            response,
+            formdata={'login': self.ifttt_username, 'password': self.ifttt_password, 'remember_me':'1', 'commit':'Sign in', 'authenticity_token':at},
+            callback=self._after_login
+        )
+        
+    def _after_login(self, response):
+        ''' Check if login whent right and trigger'''
+        if 'Sign in' in response.body:
+            self.logger.warning("Login process failed")            
+        else:
+            self.logger.info("Login process succeeded!")
+            
+            csrf_token = response.xpath('//meta[@name="csrf-token"]/@content').extract_first()
+            self.logger.debug("csrf_token = {}".format(csrf_token))
+            
+            return Request('https://ifttt.com/recipes', callback=self._find_links, meta={'page':1})
+        
+    
+    def _iterate_over_pages(self, response):
+        ''' '''
+        csrf_token = response.xpath('//meta[@name="csrf-token"]/@content').extract_first()
+        
+        for n in range(self.max_page):
+            self.logger.info("Receipt page number {}".format(n))
+            yield Request('https://ifttt.com/recipes?page={}'.format(n), callback=self._find_links, meta={'page':n}, headers={'X-CSRF-Token':csrf_token})
+    
+    def _find_links(self, response):
+        ''' '''
+        slug_re = re.compile("recipes/[0-9][-a-zA-Z0-9_]+$")
+        n = response.meta['page'] # pagenumber
+        
+        # Iterate over recipe links
+        for link in response.xpath('//a/@href').extract():
+            if slug_re.search(link):
+                url = urlparse.urljoin("https://ifttt.com", link)   
+                print 'match {} {}'.format(url, n)                
+                yield Request(url, callback=self.parse_rule)
+        
+        # Get next page
+        csrf_token = response.xpath('//meta[@name="csrf-token"]/@content').extract_first()
+        self.logger.debug("csrf_token = {}".format(csrf_token))
+        
+        n = n + 1
+        if n <= self.max_page:
+            yield Request('https://ifttt.com/recipes?page={}'.format(n), callback=self._find_links, meta={'page':n}, headers={'X-CSRF-Token':csrf_token, "Referer": "https://ifttt.com/recipes", "X-Requested-With": "XMLHttpRequest"})            
+
+        
+    def parse_rule(self, response):
         ''' This function parses a recipe page. 
             Some contracts are mingled with this docstring.
         
@@ -176,14 +188,31 @@ class IftttRuleSpider(CrawlSpider):
         loader.add_xpath('title', '//h1/span[@itemprop="name"]/text()')
         loader.add_xpath('description', '//span[@itemprop="description"]/text()')
         loader.add_xpath('event_channel', '//span[@class="recipe_trigger"]/@title')
-        loader.add_xpath('event', '//span[@class="recipe_trigger"]/span/text()') # fails
+        event = response.css('#live_trigger_fields_complete h4').xpath('text()').extract_first()
+        loader.add_value('event', event)
         loader.add_xpath('action_channel', '//span[@class="recipe_action"]/@title')
-        loader.add_xpath('action', '//span[@class="recipe_action"]/span/text()') # fails
+        action = response.css('#live_action_fields_complete h4').xpath('text()').extract_first()
+        loader.add_value('action', action)
         loader.add_xpath('created_by', '//span[@itemprop="author"]/a/@href')
         loader.add_xpath('created_at', '//span[@itemprop="datePublished"]/@datetime')
         loader.add_xpath('times_used', '//span[@class="stats_item__use-count__number"]/text()')
-        loader.add_xpath('times_favourite', '//span[@class="stats_item__favorites-count__number"]/text()')
+        loader.add_xpath('times_favorite', '//span[@class="stats_item__favorites-count__number"]/text()')
+        loader.add_xpath('featured', '//div[@title="featured"]/@title')
         return loader.load_item()
+        
+        
+#         trigger = response.css('.recipe_trigger .recipe_component-icon').xpath('@href').extract_first()
+#         self.logger.debug(u"Trigger {}".format(trigger))
+#         action = response.css('.recipe_action .recipe_component-icon').xpath('@href').extract_first()
+#         self.logger.debug(u"Action {}".format(action))
+        
+#         tgs = response.css('.trigger_fields h4').xpath('text()').extract_first()
+#         self.logger.debug(u"Triggers+ {}".format(tgs))
+#         tgs = response.css('#live_trigger_fields_complete h4').xpath('text()').extract_first()
+#         self.logger.debug(u"O bien Triggers+ {}".format(tgs))
+#         
+#         acs = response.css('#live_action_fields_complete h4').xpath('text()').extract_first() 
+#         self.logger.debug(u"Actions {}".format(acs))
 
 
 class IftttChannelSpider(CrawlSpider):

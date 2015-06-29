@@ -53,6 +53,26 @@ def strip(s):
     
     return s  # If not str or unicode, do nothing
 
+def handle_ks(s):
+    ''' This function format big numbers with 'k' in their representation.
+    
+        Args:
+            s(str):    The string witht the number representation
+            
+        Returns:
+            The number replacing ks by its 1000 multiplier
+    
+        >>> handle_ks('1.1k')
+        1100
+        
+        >>> handle_ks('62k')
+        62000
+    '''
+    if s.find('k'):
+        return str(int(float(s.replace('k',''))*1000))
+    else:
+        return s
+
 def erase_channel(s):
     ''' This function removes the word 'Channel' at the end of the string given.
     
@@ -143,7 +163,8 @@ class RecipeLoader(BaseEweLoader):
         user uris. 
     '''
     created_by_in = MapCompose(contextualize)
-    
+    times_favorite = TakeFirst(strip, handle_ks)    
+    times_used = TakeFirst(strip, handle_ks)
     
 class ChannelLoader(BaseEweLoader):
     ''' ChannelItems loader. In addition to BaseEweLoader it formats the 

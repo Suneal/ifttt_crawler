@@ -24,6 +24,7 @@ class RecipeItem(Item):
     created_by = Field()
     times_used = Field()
     times_favorite = Field()
+    featured = Field()
     created_at = Field()
     supported_by = Field()
     
