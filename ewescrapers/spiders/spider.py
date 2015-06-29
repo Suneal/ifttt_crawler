@@ -36,16 +36,26 @@ class IftttRulesSpider(CrawlSpider):
            exist, the response will redirect to the url of the recipe.
         4. Once the url of each recipe is reached, the rule is scraped
         
+        The parameters `from_rule` and `to_rule` configure the range of rule 
+        ids that are considered.
+        
+        Spider args:
+        
+            * username: the username at ifttt.com
+            * password: the password
+            * from_rule: the lowest id of the rule range
+            * to_rule: the highest id of the rule range
     '''
     name = 'ifttt_rules'
     start_urls = ['https://ifttt.com/login']
     
-    def __init__(self, username=None, password=None, num_rules=80, *args, **kwargs):
+    def __init__(self, username=None, password=None, from_rule=1, to_rule=100, *args, **kwargs):
         """ Read arguments """
         super(IftttRulesSpider, self).__init__(*args, **kwargs)
         self.ifttt_username = username
         self.ifttt_password = password 
-        self.num_rules = num_rules
+        self.from_rule = int(from_rule)
+        self.to_rule = int(to_rule)
 
     def parse(self, response):
         """ Get authenticity token and perform login """
@@ -67,7 +77,7 @@ class IftttRulesSpider(CrawlSpider):
     
     def _after_login(self, response):
         ''' Hit the recipe urls by id '''
-        for n in range(self.num_rules):
+        for n in range(self.from_rule, self.to_rule):
             yield Request("https://ifttt.com/recipes/{}".format(n), callback=self.parse_rule)
         
         
