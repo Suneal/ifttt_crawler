@@ -10,3 +10,4 @@ output
 *.n3
 *.json
 *.csv
+Dockerfile
