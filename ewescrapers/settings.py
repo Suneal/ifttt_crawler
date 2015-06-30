@@ -34,5 +34,6 @@ FEED_EXPORTERS = {
     'json': 'scrapy.exporters.JsonItemExporter',
     'jsonlines': 'scrapy.exporters.JsonLinesItemExporter',
     'csv': 'ewescrapers.rdf.csv_exporter.CsvExporter',
+    'csvold': 'scrapy.exporters.CsvItemExporter',
     'xml': 'scrapy.exporters.XmlItemExporter',
 }
