@@ -13,9 +13,6 @@ Documentation
 
 Detailed documentation may be found at the Wiki page of this proyect ([Wiki] (./wiki) ).
 
-### Contact
-
-For more information, contact us through: http://gsi.dit.upm.es
 
 Usage
 ----------------------
@@ -97,6 +94,10 @@ These are some examples:
     scrapy crawl ifttt_channels -t jinja -o ifttt.n3
     scrapy crawl zapier_channels -t jinja -o output/zapier.rdf
 
+
+### Contact
+
+For more information, contact us through: http://gsi.dit.upm.es
 
 ![GSI Logo](http://gsi.dit.upm.es/templates/jgsi/images/logo.png)
 
