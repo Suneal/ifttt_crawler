@@ -85,7 +85,7 @@ class ZapierRuleSpider(CrawlSpider):
     name = 'zapier_rules'
     allowed_domains = ['zapier.com']
     start_urls = ['https://zapier.com/api/v3/recipes?per_page=15&page=1']
- 
+    max_page = None
      
     def parse(self, response):
         ''' Parse the json data '''        
@@ -110,7 +110,9 @@ class ZapierRuleSpider(CrawlSpider):
             item['supported_by'] = 'https://zapier.com'
             yield item
         
-        if data['next_url']:
+        if self.max_page and int(data['page']) >= int(self.max_page):
+            self.logger.info("Reached the maximun page given by the user. Mision accomplished!")
+        elif data['next_url']:
             abs_url = loaders.contextualize(data['next_url'], base_url='http://zapier.com')
             yield scrapy.Request(abs_url, callback = self.parse)
         else:

@@ -27,10 +27,9 @@ ITEM_PIPELINES = {
       'ewescrapers.pipelines.PopulateParameterIds' : 700
     }
 
-FEED_EXPORTERS = {
-    # 'rdf' : 'ewescrapers.rdf.jinja_exporters.JinjaExporter',
-    'rdf' : 'ewescrapers.rdf.jinja_exporters.JinjaExporterMultifile',
-    # 'rdf2' : 'ewescrapers.rdf.exporter.RdfExporter',
+FEED_EXPORTERS = {    
+    'jinja' : 'ewescrapers.rdf.jinja_exporters.JinjaExporterMultifile',
+    # 'rdf' : 'ewescrapers.rdf.rdf_exporter.RdfExporter',
     'json': 'scrapy.exporters.JsonItemExporter',
     'jsonlines': 'scrapy.exporters.JsonLinesItemExporter',
     'csv': 'ewescrapers.rdf.csv_exporter.CsvExporter',
