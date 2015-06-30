@@ -28,11 +28,11 @@ ITEM_PIPELINES = {
     }
 
 FEED_EXPORTERS = {    
-    'jinja' : 'ewescrapers.rdf.jinja_exporters.JinjaExporterMultifile',
+    'jinja' : 'ewescrapers.exporters.jinja_exporters.JinjaExporterMultifile',
     # 'rdf' : 'ewescrapers.rdf.rdf_exporter.RdfExporter',
     'json': 'scrapy.exporters.JsonItemExporter',
     'jsonlines': 'scrapy.exporters.JsonLinesItemExporter',
-    'csv': 'ewescrapers.rdf.csv_exporter.CsvExporter',
+    'csv': 'ewescrapers.exporters.csv_exporter.CsvExporter',
     'csvold': 'scrapy.exporters.CsvItemExporter',
     'xml': 'scrapy.exporters.XmlItemExporter',
 }
