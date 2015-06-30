@@ -4,8 +4,9 @@ Created on Jun 21, 2015
 @author: miguel
 '''
 from ewescrapers import loaders
-from ewescrapers.items import ChannelItem, EventItem, ActionItem
+from ewescrapers.items import ChannelItem, EventItem, ActionItem, RecipeItem
 from scrapy.spiders.crawl import CrawlSpider
+import json
 import scrapy
 
 
@@ -77,11 +78,40 @@ class ZapierChannelSpider(CrawlSpider):
         return channel
         
         
-# class ZapierRuleSpider(CrawlSpider):
-#     ''' '''
-#     name = 'zapier_rules'
-#     allowed_domains = ['zapier.com']
-#     start_urls = ['https://zapier.com/app/explore']
-# 
-#     
-#     def parse(self, response):
+class ZapierRuleSpider(CrawlSpider):
+    ''' This consutls the zapier api (internal api) to get the rules form 
+        the zapps 
+    '''
+    name = 'zapier_rules'
+    allowed_domains = ['zapier.com']
+    start_urls = ['https://zapier.com/api/v3/recipes?per_page=15&page=1']
+ 
+     
+    def parse(self, response):
+        ''' Parse the json data '''        
+        data = json.loads(response.body)
+        
+        self.logger.debug("Scraping page {} of {}".format(data.get('page', 'X'), data.get('pages', 'Y')) )
+        
+        for zapp in data['objects']:
+            item = RecipeItem()
+            abs_url = loaders.contextualize(zapp['url'], base_url="https://zapier.com")
+            item['id'] = abs_url
+            item['title'] = zapp.get('title', '')
+            item['description'] = zapp.get('description', '')
+            item['url'] = abs_url
+            item['event'] = zapp.get('read_data', {}).get('action', '')
+            item['event_channel'] = zapp.get('read_data',{}).get('selected_api', '')
+            item['action'] = zapp.get('write_data', {}).get('action', '')
+            item['action_channel'] = zapp.get('write_data',{}).get('selected_api', '')
+            item['rule'] = unicode(zapp.get('write_data',{}).get('params', ''))
+            item['times_used'] = zapp.get('used_human', '')
+            item['times_favorite'] = zapp.get('used_score', '')
+            item['supported_by'] = 'https://zapier.com'
+            yield item
+        
+        if data['next_url']:
+            abs_url = loaders.contextualize(data['next_url'], base_url='http://zapier.com')
+            yield scrapy.Request(abs_url, callback = self.parse)
+        else:
+            self.logger.info("Could not find next url. Last url parsed:{}".format(response.url))
