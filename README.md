@@ -11,7 +11,7 @@ The EWE ontology models Channels (called apps in Zapier) and Rules (Ifttt's reci
 Documentation
 ----------------------
 
-Detailed documentation may be found at the Wiki page of this proyect ([Wiki] (./wiki) ).
+Detailed documentation may be found at the Wiki page of this proyect ([Wiki] (https://github.com/miguelcb84/ewe-scrapers/wiki) ).
 
 
 Usage
