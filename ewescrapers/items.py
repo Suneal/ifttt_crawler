@@ -27,9 +27,10 @@ class RecipeItem(Item):
     featured = Field()
     created_at = Field()
     supported_by = Field()
+    rule = Field()
     
     def __str__(self, *args, **kwargs):
-        return str(self.get('title', 'NoTitle'))
+        return unicode(self.get('title', 'NoTitle'))
 
 class ChannelItem(Item):
     ''' Class that represents a Channel according to Ifttt definition.
@@ -48,7 +49,7 @@ class ChannelItem(Item):
     actions_provided = Field()
 
     def __str__(self, *args, **kwargs):
-        return str(self.get('title', ''))
+        return unicode(self.get('title', ''))
 
 class EventItem(Item):
     '''
@@ -63,7 +64,7 @@ class EventItem(Item):
     output_parameters = Field()
     
     def __str__(self, *args, **kwargs):
-        return str(self.get('title', ''))
+        return unicode(self.get('title', ''))
 
 class ActionItem(Item):
     '''
@@ -77,7 +78,7 @@ class ActionItem(Item):
     input_parameters = Field()
     
     def __str__(self, *args, **kwargs):
-        return str(self.get('title', ''))
+        return unicode(self.get('title', ''))
     
 class InputParameterItem(Item):
     '''
@@ -90,7 +91,7 @@ class InputParameterItem(Item):
     see_also = Field()
     
     def __str__(self, *args, **kwargs):
-        return str(self.get('title', ''))
+        return unicode(self.get('title', ''))
     
 class OutputParameterItem(Item):
     '''
@@ -103,4 +104,4 @@ class OutputParameterItem(Item):
     see_also = Field()
 
     def __str__(self, *args, **kwargs):
-        return str(self.get('title', ''))
+        return unicode(self.get('title', ''))
