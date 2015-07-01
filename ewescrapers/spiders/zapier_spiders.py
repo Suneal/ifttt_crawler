@@ -7,6 +7,7 @@ from ewescrapers import loaders
 from ewescrapers.items import ChannelItem, EventItem, ActionItem, RecipeItem
 from scrapy.spiders.crawl import CrawlSpider
 import json
+import re
 import scrapy
 
 
@@ -24,11 +25,10 @@ class ZapierChannelSpider(CrawlSpider):
 
     
     def parse(self, response):
-        """ Parse response from start urls (/zapbook) """
+        ''' Parse response from start urls (/zapbook) '''
         services_grid = response.css('.services-grid')
         for service in services_grid.css('.service'):
             klass = service.xpath('@class').extract_first() # extract category. A few may not have category
-            category = klass.replace('service-all', '').replace('service','').replace('-','').strip()
             description = service.xpath('@data-description').extract() # remove the ending <div>category</div>
             #logo is a background-image css property
             url = service.xpath('a[@class="title"]/@href').extract_first() 
@@ -40,13 +40,28 @@ class ZapierChannelSpider(CrawlSpider):
             item['title'] = title
             item['description'] = description
             item['commercial_url'] = abs_url
-            item['category'] = category
+            item['category']= self._extract_category(klass)
             
             yield scrapy.Request(abs_url, meta={'channel':item}, callback=self.parse_channel)
+    
+    def _extract_category(self, text):
+        ''' Extracts the category from the string where zapier encodes that information.
             
+            The format of the input string consist on a list of css classes. 
+            Among them, the category or categories are incuded.
+        
+            >>> _extract_category('service service-all service-developer-tools service-phone')
+            ["developer tools", "service phone"]
+        
+        '''
+        text = text.replace('service-all', '')
+        patt = re.compile('(service-([a-zA-Z\-]+))+')
+        cat_list = patt.findall(text)
+        return [cat[1].replace('-',' ') for cat in cat_list]
+        
 
     def parse_channel(self, response):
-        """ """
+        ''' '''
         channel = response.meta['channel']
         channel['logo'] = response.xpath('//*[@id="app"]/div[1]/div[2]/div/div[2]/div[1]/div/img/@src').extract_first()
 
