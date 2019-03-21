@@ -22,13 +22,39 @@ class RecipeItem(Item):
     action = Field()
     action_channel = Field()
     created_by = Field()
+    created_by_new = Field()
     times_used = Field()
+    permissions = Field()
+
+    # TODO Somehow this doesn't work need to DEBUG
+    # I saved upto 5. Max I found was 4. :)
+    # for i in range(0,10):
+    #     globals()['permission_channel_'+str(i)] = Field()
+    #     globals()['permission_event_'+str(i)] = Field()
+    #     print("i",permission_event_0)
+    permission_channel_0 = Field()
+    permission_event_0 = Field()
+
+    permission_channel_1 = Field()
+    permission_event_1 = Field()
+
+    permission_channel_2 = Field()
+    permission_event_2 = Field()
+    
+    permission_channel_3 = Field()
+    permission_event_3 = Field()
+
+    permission_channel_4 = Field()
+    permission_event_4 = Field()
+
+    permission_channel_5 = Field()
+    permission_event_5 = Field()
+
     times_favorite = Field()
     featured = Field()
     created_at = Field()
     supported_by = Field()
     rule = Field()
-    
     def __str__(self, *args, **kwargs):
         return unicode(self.get('title', 'NoTitle'))
 

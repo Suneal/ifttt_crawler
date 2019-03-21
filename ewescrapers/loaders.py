@@ -68,6 +68,7 @@ def handle_ks(s):
         >>> handle_ks('62k')
         62000
     '''
+    print("---->",s)
     if s.find('k') != -1:
         return str(int(float(s.replace('k',''))*1000))        
     else:
@@ -162,7 +163,7 @@ class RecipeLoader(BaseEweLoader):
     ''' RecipeItems loader. In addition to BaseEweLoader, it contextualizes 
         user uris. 
     '''
-    created_by_in = MapCompose(contextualize)
+    #created_by_in = MapCompose(contextualize) # We just need the users
     times_favorite_in = MapCompose(strip, handle_ks)    
     times_used_in = MapCompose(strip, handle_ks)
     

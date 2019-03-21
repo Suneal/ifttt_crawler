@@ -13,6 +13,8 @@ from scrapy.spiders import CrawlSpider
 import re
 import scrapy
 import urlparse
+from selenium import webdriver
+import time
 
 class IftttRulesSpider(CrawlSpider):
     ''' This spider scrapes ifttt recipe pages to extract the rules.
@@ -77,8 +79,15 @@ class IftttRulesSpider(CrawlSpider):
     
     def _after_login(self, response):
         ''' Hit the recipe urls by id '''
-        for n in range(self.from_rule, self.to_rule):
-            yield Request("https://ifttt.com/recipes/{}".format(n), callback=self.parse_rule)
+        # for n in range(self.from_rule, self.to_rule):
+        #     yield Request("https://ifttt.com/recipes/{}".format(n), callback=self.parse_rule)
+        with open('crawl_links_quotes.txt','r') as fromFile:
+            count = 1
+            for line in fromFile:
+                # Added sleep because I was getting 429 error
+                time.sleep(0.5)
+                count +=1
+                yield Request(line,callback=self.parse_rule)
         
         
     def parse_rule(self, response):
@@ -93,19 +102,37 @@ class IftttRulesSpider(CrawlSpider):
         loader = RecipeLoader(item=RecipeItem(), response=response)
         loader.add_value('supported_by', 'https://ifttt.com/')
         loader.add_value('url', response.url)
-        loader.add_value('id', response.url)
-        loader.add_xpath('title', '//h1/span[@itemprop="name"]/text()')
-        loader.add_xpath('description', '//span[@itemprop="description"]/text()')
-        loader.add_xpath('event_channel', '//span[@class="recipe_trigger"]/@title')
-        event = response.css('#live_trigger_fields_complete h4').xpath('text()').extract_first()
-        loader.add_value('event', event)
-        loader.add_xpath('action_channel', '//span[@class="recipe_action"]/@title')
-        action = response.css('#live_action_fields_complete h4').xpath('text()').extract_first()
-        loader.add_value('action', action)
-        loader.add_xpath('created_by', '//span[@itemprop="author"]/a/@href')
-        loader.add_xpath('created_at', '//span[@itemprop="datePublished"]/@datetime')
-        loader.add_xpath('times_used', '//span[@class="stats_item__use-count__number"]/text()')
-        loader.add_xpath('times_favorite', '//span[@class="stats_item__favorites-count__number"]/text()')
+        loader.add_value('id', response.url.replace('?term=%22smart%20home%22%0A',''))
+        loader.add_xpath('title', '//*[@class="applet-name"]/text()')
+        loader.add_xpath('description', '//*[@class="applet-description"]/text()')
+        loader.add_xpath('created_by', '//*[@class="author-link"]/text()')
+        loader.add_xpath('action_channel', '//div[@class="permissions-meta"]//h5/text()[1]')
+        loader.add_xpath('action', '//div[@class="permissions-meta"]//h5/text()[1]')
+        loader.add_xpath('event_channel', '//div[@class="permissions-meta"]//h5/text()')
+        loader.add_xpath('event', '//div[@class="permissions-meta"]//span/text()')
+        # Getting number of permissions defined. The current version doesn't have specific tag to identify trigger and action
+        per = len(response.xpath('//div[@class="permissions-meta"]//ul[count(li) > 1]/text()')) 
+        loader.add_value('permissions', per-1)
+        for i in range(1,per):
+            loader.add_xpath('permission_channel_'+ str(i), '//*[@id="card"]/div/div[1]/div[2]/ul/li['+str(i) +']/a/div/h5')
+            loader.add_xpath('permission_event_'+ str(i),'//*[@id="card"]/div/div[1]/div[2]/ul/li['+str(i) +']/a/div/span')
+
+        loader.add_xpath('times_used', '//*[@class="installs"]/span/text()')
+        
+        # TODO IFTTT VERIFIED INFORMATION 
+        # TODO author class name varies over different applets
+        # loader.add_xpath('title', '/html/body/main/div/div/div[1]/div[1]/div[1]/h1')
+        # loader.add_xpath('times_used', '//*[@id="card"]/div/div[1]/div[3]/div[1]/span')
+        # loader.add_xpath('description', '/html/body/main/div/div/div[1]/div[1]/div[1]/div[2]/p[1]')
+        # loader.add_xpath('times_favorite', '//span[@class="stats_item__favorites-count__number"]/text()')
+        # loader.add_xpath('event_channel', '//*[@id="card"]/div/div[1]/div[2]/ul/li[1]/a/div/h5')
+        # loader.add_xpath('event','//*[@id="card"]/div/div[1]/div[2]/ul/li[1]/a/div/span')
+        # loader.add_xpath('action_channel', '//*[@id="card"]/div/div[1]/div[2]/ul/li[2]/a/div/h5')
+        # loader.add_xpath('action','//*[@id="card"]/div/div[1]/div[2]/ul/li[2]/a/div/span')
+        # loader.add_xpath('created_by', '//*[@id="card"]/div/div[1]/div[1]/div[1]/div[2]/p[2]/span/b/a')
+        # loader.add_xpath('created_at', '//span[@itemprop="datePublished"]/@datetime') # This doesn't work
+
+
         return loader.load_item()
     
     
@@ -113,12 +140,15 @@ class IftttPagesSpider(CrawlSpider):
     ''' '''
     name = 'ifttt_rule_pages'
     start_urls = ['https://ifttt.com/login']
-    recipes_url = 'https://ifttt.com/recipes'    
+    recipes_url = 'https://ifttt.com/discover'    
     
 
     def __init__(self, username=None, password=None, max_page=3, *args, **kwargs):
         """ Read arguments """
         super(IftttPagesSpider, self).__init__(*args, **kwargs)
+        self.driver = webdriver.Firefox()
+        #self.driver.get('https://ifttt.com/search/query/smart%20home')
+        self.driver.get('https://ifttt.com/search/query/%22smart%20home%22')
         self.ifttt_username = username
         self.ifttt_password = password                
         self.max_page = max_page
@@ -133,53 +163,45 @@ class IftttPagesSpider(CrawlSpider):
         
         at = response.css('[name="authenticity_token"]').xpath('@value').extract_first()
         self.logger.debug(u'Authenticity token {}'.format(at))
-                
         return scrapy.FormRequest.from_response(
             response,
             formdata={'login': self.ifttt_username, 'password': self.ifttt_password, 'remember_me':'1', 'commit':'Sign in', 'authenticity_token':at},
             callback=self._after_login
         )
+
+        
         
     def _after_login(self, response):
         ''' Check if login whent right and trigger'''
-        if 'Sign in' in response.body:
-            self.logger.warning("Login process failed")            
-        else:
-            self.logger.info("Login process succeeded!")
+        self.logger.info("This works even if login failed!")
             
-            csrf_token = response.xpath('//meta[@name="csrf-token"]/@content').extract_first()
-            self.logger.debug("csrf_token = {}".format(csrf_token))
-            
-            return Request('https://ifttt.com/recipes', callback=self._find_links, meta={'page':1})
-        
-    
-    def _iterate_over_pages(self, response):
-        ''' '''
-        csrf_token = response.xpath('//meta[@name="csrf-token"]/@content').extract_first()
-        
-        for n in range(self.max_page):
-            self.logger.info("Receipt page number {}".format(n))
-            yield Request('https://ifttt.com/recipes?page={}'.format(n), callback=self._find_links, meta={'page':n}, headers={'X-CSRF-Token':csrf_token})
-    
-    def _find_links(self, response):
-        ''' '''
-        slug_re = re.compile("recipes/[0-9][-a-zA-Z0-9_]+$")
-        n = response.meta['page'] # pagenumber
-        
-        # Iterate over recipe links
-        for link in response.xpath('//a/@href').extract():
-            if slug_re.search(link):
-                url = urlparse.urljoin("https://ifttt.com", link)   
-                print 'match {} {}'.format(url, n)                
-                yield Request(url, callback=self.parse_rule)
-        
-        # Get next page
         csrf_token = response.xpath('//meta[@name="csrf-token"]/@content').extract_first()
         self.logger.debug("csrf_token = {}".format(csrf_token))
+    
+        return Request('https://ifttt.com/discover', callback=self._find_links, meta={'page':1})
         
-        n = n + 1
-        if n <= self.max_page:
-            yield Request('https://ifttt.com/recipes?page={}'.format(n), callback=self._find_links, meta={'page':n}, headers={'X-CSRF-Token':csrf_token, "Referer": "https://ifttt.com/recipes", "X-Requested-With": "XMLHttpRequest"})            
+    
+    
+    def _find_links(self, response):
+        count =1
+        end_count = 13 # Because each time "More" is clicked, 12 cards are added
+        # Directly writes to this file all the links
+        with open('crawl_links.txt','a') as toFile:
+            while True:
+                next = self.driver.find_element_by_xpath('/html/body/main/div/div/div/main/p/a')
+                try:
+                    for i in range(count,end_count):
+                        # Could have done this by extracting the class but this works
+                        path_href = '/html/body/main/div/div/div/main/ul/li[' + str(i) + ']/a'
+                        elems = self.driver.find_element_by_xpath(path_href)
+                        toFile.write(str(elems.get_attribute("href")) + '\n')
+                    next.click()
+                    count += 12
+                    end_count +=12
+                except:
+                    print("Something happened!")
+                    break
+                        
 
         
     def parse_rule(self, response):
@@ -191,40 +213,40 @@ class IftttPagesSpider(CrawlSpider):
             @returns requests 0
             @scrapes url id title description event_channel event action_channel action created_by created_at times_used
         '''
+        # We don't need all the information.
+        # Can copy the recipeloader from 
         loader = RecipeLoader(item=RecipeItem(), response=response)
         loader.add_value('supported_by', 'https://ifttt.com/')
         loader.add_value('url', response.url)
         loader.add_value('id', response.url)
-        loader.add_xpath('title', '//h1/span[@itemprop="name"]/text()')
-        loader.add_xpath('description', '//span[@itemprop="description"]/text()')
-        loader.add_xpath('event_channel', '//span[@class="recipe_trigger"]/@title')
-        event = response.css('#live_trigger_fields_complete h4').xpath('text()').extract_first()
-        loader.add_value('event', event)
-        loader.add_xpath('action_channel', '//span[@class="recipe_action"]/@title')
-        action = response.css('#live_action_fields_complete h4').xpath('text()').extract_first()
-        loader.add_value('action', action)
-        loader.add_xpath('created_by', '//span[@itemprop="author"]/a/@href')
+        loader.add_xpath('title', '/html/body/main/div/div/div[1]/div[1]/div[1]/h1')
+        loader.add_xpath('description', '/html/body/main/div/div/div[1]/div[1]/div[1]/div[2]/p[1]')
+        loader.add_xpath('event_channel', '//*[@id="card"]/div/div[1]/div[2]/ul/li[1]/a/div/h5')
+        loader.add_xpath('event','//*[@id="card"]/div/div[1]/div[2]/ul/li[1]/a/div/span')
+        loader.add_xpath('action_channel', '//*[@id="card"]/div/div[1]/div[2]/ul/li[2]/a/div/h5')
+        loader.add_xpath('action','//*[@id="card"]/div/div[1]/div[2]/ul/li[2]/a/div/span')
+        loader.add_xpath('created_by', '//*[@id="card"]/div/div[1]/div[1]/div[1]/div[2]/p[2]/span/b/a')
         loader.add_xpath('created_at', '//span[@itemprop="datePublished"]/@datetime')
-        loader.add_xpath('times_used', '//span[@class="stats_item__use-count__number"]/text()')
+        loader.add_xpath('times_used', '//*[@class="installs"]/span/text()')
         loader.add_xpath('times_favorite', '//span[@class="stats_item__favorites-count__number"]/text()')
-        loader.add_xpath('featured', '//div[@title="featured"]/@title')
+
+        # loader.add_xpath('title', '//h1/span[@itemprop="name"]/text()')
+        # loader.add_xpath('description', '//span[@itemprop="description"]/text()')
+        # loader.add_xpath('event_channel', '//span[@class="recipe_trigger"]/@title')
+        # event = response.css('#live_trigger_fields_complete h4').xpath('text()').extract_first()
+        # loader.add_value('event', event)
+        # loader.add_xpath('action_channel', '//span[@class="recipe_action"]/@title')
+        # action = response.css('#live_action_fields_complete h4').xpath('text()').extract_first()
+        # loader.add_value('action', action)
+        # loader.add_xpath('created_by', '//span[@itemprop="author"]/a/@href')
+        # loader.add_xpath('created_at', '//span[@itemprop="datePublished"]/@datetime')
+        # loader.add_xpath('times_used', '//span[@class="stats_item__use-count__number"]/text()')
+        # loader.add_xpath('times_favorite', '//span[@class="stats_item__favorites-count__number"]/text()')
+        # loader.add_xpath('featured', '//div[@title="featured"]/@title')
         return loader.load_item()
         
-        
-#         trigger = response.css('.recipe_trigger .recipe_component-icon').xpath('@href').extract_first()
-#         self.logger.debug(u"Trigger {}".format(trigger))
-#         action = response.css('.recipe_action .recipe_component-icon').xpath('@href').extract_first()
-#         self.logger.debug(u"Action {}".format(action))
-        
-#         tgs = response.css('.trigger_fields h4').xpath('text()').extract_first()
-#         self.logger.debug(u"Triggers+ {}".format(tgs))
-#         tgs = response.css('#live_trigger_fields_complete h4').xpath('text()').extract_first()
-#         self.logger.debug(u"O bien Triggers+ {}".format(tgs))
-#         
-#         acs = response.css('#live_action_fields_complete h4').xpath('text()').extract_first() 
-#         self.logger.debug(u"Actions {}".format(acs))
 
-
+# Haven't worked on this : Sunil
 class IftttChannelSpider(CrawlSpider):
     ''' This spider crawls ifttt and extracts all information of all channels 
         linked in the channel index page (/channels).
