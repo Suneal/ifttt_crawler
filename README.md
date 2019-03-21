@@ -32,8 +32,8 @@ The installation and configuration of the scrapper is detailed below.
 
 First of all, clone this repository in your system
 
-    git clone https://github.com/miguelcb84/ewe-scrapers.git
-    cd ewe-scrapers
+    git clone https://github.com/Suneal/ifttt_crawler.git
+    cd ifttt_crawler
 
 Then, install the requirements. It is preferable to work with virtualenvs. 
 
