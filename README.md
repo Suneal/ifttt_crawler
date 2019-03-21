@@ -3,6 +3,7 @@
 
 Introduction
 ---------------------
+This project has modified [miguelcb84](https://github.com/miguelcb84/ewe-scrapers)'s code for the latest (March,2019) IFTTT format. Also another addition is use of selenium to first crawl the links and then get additional information from the website.
 
 This project scrapes information from the major Task Automation Services (for now ifttt and Zapier are supported) in a semantic format. The extracted data is modelled using the Evented WEb ontology ([EWE]) developed by the Intelligent Systems Group ([GSI]). For this purpose the [scrapy] framework is used.  
 
@@ -19,7 +20,11 @@ Usage
 
 Several spiders are provided with this project. These are developed using [scrapy], so its usage it that specified  by scrapy's documentation. For instance, for running the spider that extracts ifttt channels the following command should be executed.
 
-    scrapy crawl ifttt_channels
+    scrapy crawl ifttt_rule_pages -a username=<username> -a password=<password> 
+
+    scrapy crawl ifttt_rules -a username=<username> -a password=<password> -t json -o crawl_quotes.json 
+
+Note: You can define the filename you want to save the links to in ifttt_spiders.py. The second command uses the file that contains the links to be crawled to get detailed information about each applet.
   
 The installation and configuration of the scrapper is detailed below.
 
@@ -30,9 +35,9 @@ First of all, clone this repository in your system
     git clone https://github.com/miguelcb84/ewe-scrapers.git
     cd ewe-scrapers
 
-Then, install the requirements. It is preferable to work with virtualenvs.
+Then, install the requirements. It is preferable to work with virtualenvs. 
 
-    mkvirtualenv ewescrapers
+    . ./venv27/bin/activate
     pip install -r requirements.txt
 
 And the scrapers are ready!
