@@ -1,4 +1,4 @@
-[Ewe-Scrappers](http://gsi.dit.upm.es) 
+[IFTTT_CRAWLER](http://gsi.dit.upm.es) 
 ==================================
 
 Introduction
@@ -8,12 +8,6 @@ This project has modified [miguelcb84](https://github.com/miguelcb84/ewe-scraper
 This project scrapes information from the major Task Automation Services (for now ifttt and Zapier are supported) in a semantic format. The extracted data is modelled using the Evented WEb ontology ([EWE]) developed by the Intelligent Systems Group ([GSI]). For this purpose the [scrapy] framework is used.  
 
 The EWE ontology models Channels (called apps in Zapier) and Rules (Ifttt's recipes and Zapier's zapps). The data described using EWE may be loaded in a semantic endpoint to be consulted using SPARQL. Although particular exporters are provided to support EWE's format, the data may also be exported using the built-in exporters of scrapy (csv, json, etc.)
-
-Documentation
-----------------------
-
-Detailed documentation may be found at the Wiki page of this proyect ([Wiki] (https://github.com/miguelcb84/ewe-scrapers/wiki) ).
-
 
 Usage
 ----------------------
@@ -83,12 +77,6 @@ The number of channels it not big enough to implement a process to limit depth o
 This project also comes with a few additional exporters to those already provided by scrapy. To tell scrapy that it has to output the outcome into a file two arguments should be used: `t` that specifies the format and `o` that gives the output filename. For instance, the following command scrapes zapier's channels and saves the data in json format in apps.json file.
 
     scrapy crawl ifttt_rules -t json -o apps.json
-
-#### Exporting to csv
-
-Scrapy already provides a default csv exporter, however, it does not escape `;` characters. Because of that, some rows may have missplaced data. To solve it a new exporter that substitutes the scrapy built-in exporter is provided. To use that provider the `csv` format should be used. That exporter replaces `;` character with `%3B` (its representation in urls).
-
-Since it may be nasty in some cases (and also because there is an issute with non textual fields), the built-in format is also provided selecting format `csvold`.
 
 #### Exporting to semantic format
 
